@@ -1,0 +1,32 @@
+#pragma once
+#include "Scenario/Terminal.h"
+
+namespace HuxApp
+{
+	class Level
+	{
+	public:
+		const QString& get_name() const { return m_name; }
+		const QString& get_level_dir_name() const { return m_level_dir_name; }
+		const QString& get_level_script_name() const { return m_level_script_name; }
+		
+		bool is_modified() const { return m_modified; }
+		void set_modified(bool modified) { m_modified = modified; }
+
+		Terminal& get_terminal(int index) { return m_terminals[index]; }
+		std::vector<Terminal>& get_terminals() { return m_terminals; }
+
+		const Terminal& get_terminal(int index) const { return m_terminals[index]; }
+		const std::vector<Terminal>& get_terminals() const { return m_terminals; }
+	private:
+		QString m_name;
+		QString m_level_dir_name;
+		QString m_level_script_name;
+		bool m_modified = false;
+
+		std::vector<Terminal> m_terminals;
+		QString m_comments;
+
+		friend class ScenarioManager;
+	};
+}
