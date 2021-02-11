@@ -2,5 +2,6 @@
     <qresource prefix="/HuxQt">
         <file>missing.png</file>
         <file>fat_hux.ico</file>
+        <file>static.png</file>
     </qresource>
 </RCC>

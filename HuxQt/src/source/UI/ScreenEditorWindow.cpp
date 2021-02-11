@@ -200,8 +200,10 @@ namespace HuxApp
 			m_internal->m_ui.screen_edit_tabs->tabBar()->setTabTextColor(screen_tab_index, Qt::black);
 
 			// Save the screen data
-			screen_tab->save_screen();
-			m_core.get_main_window()->save_screen(screen_tab->get_screen_item(), screen_tab->get_screen_data());
+			if (screen_tab->save_screen())
+			{
+				m_core.get_main_window()->save_screen(screen_tab->get_screen_item(), screen_tab->get_screen_data());
+			}
 		}
 	}
 
@@ -232,6 +234,7 @@ namespace HuxApp
 				display_data.m_resource_id = current_screen_data.m_resource_id;
 				display_data.m_text = current_screen_data.m_display_text;
 				display_data.m_screen_type = current_screen_data.m_type;
+				display_data.m_alignment = current_screen_data.m_alignment;
 
 				m_core.get_display_system().update_display(DisplaySystem::View::SCREEN_EDITOR, display_data);
 			}

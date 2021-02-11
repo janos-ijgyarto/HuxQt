@@ -19,7 +19,7 @@ namespace HuxApp
 		const Terminal::Screen& get_screen_data() const { return m_screen_data; }
 		bool is_modified() const { return m_modified; }
 		
-		void save_screen();
+		bool save_screen();
 		void update_display_text();
 	signals:
 		void screen_edited(QTreeWidgetItem* screen_item);
@@ -35,6 +35,7 @@ namespace HuxApp
 		void screen_resource_clicked();
 		void pict_selected(int pict_id);
 		void screen_resource_edited(const QString& text);
+		void screen_alignment_combo_activated(int index);
 		void screen_text_edited();
 
 		void bold_button_clicked();

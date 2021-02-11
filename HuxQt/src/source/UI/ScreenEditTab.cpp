@@ -17,7 +17,15 @@ namespace HuxApp
             "INFORMATION",
             "PICT",
             "CHECKPOINT",
-            "LOGOFF"
+            "LOGOFF",
+            "TAG",
+            "STATIC"
+        };
+
+        constexpr const char* SCREEN_ALIGNMENT_LABELS[Utils::to_integral(Terminal::ScreenAlignment::ALIGNMENT_COUNT)] = {
+            "LEFT",
+            "CENTER",
+            "RIGHT",
         };
 
         constexpr const char* TEXT_COLOR_LABELS[Utils::to_integral(ScenarioManager::TextColor::COLOR_COUNT)] = {
@@ -67,6 +75,7 @@ namespace HuxApp
 
         // Initialize controls based on screen data
         m_ui.screen_type_combo->setCurrentIndex(Utils::to_integral(screen_data.m_type));
+        m_ui.alignment_combo->setCurrentIndex(Utils::to_integral(screen_data.m_alignment));
 
         // Enable controls based on whether the screen type is properly set (still update the controls, as we may have just toggled the type)
         validate_screen(screen_data.m_type);
@@ -78,10 +87,39 @@ namespace HuxApp
         connect_signals();
     }
 
-    void ScreenEditTab::save_screen()
+    bool ScreenEditTab::save_screen()
     {
+        // Validate screen data
+        switch (m_screen_data.m_type)
+        {
+        case Terminal::ScreenType::LOGON:
+        case Terminal::ScreenType::LOGOFF:
+        case Terminal::ScreenType::PICT:
+        case Terminal::ScreenType::CHECKPOINT:
+        case Terminal::ScreenType::TAG:
+        case Terminal::ScreenType::STATIC:
+        {
+            if (m_ui.resource_id_edit->text().isEmpty())
+            {
+                QMessageBox::warning(this, "Screen Data Error", "Must set a valid resource ID!");
+                return false;
+            }
+        }
+            break;
+        }
+
+        if ((m_screen_data.m_type == Terminal::ScreenType::PICT) && (m_screen_data.m_alignment == Terminal::ScreenAlignment::CENTER))
+        {
+            if (!m_screen_data.m_script.isEmpty())
+            {
+                QMessageBox::warning(this, "Screen Data Error", "Centered PICT must not have any text!");
+                return false;
+            }
+        }
+
         m_modified = false;
         update_display_text();
+        return true;
     }
 
     void ScreenEditTab::update_display_text()
@@ -126,6 +164,11 @@ namespace HuxApp
             m_ui.screen_type_combo->addItem(SCREEN_TYPE_LABELS[screen_type_index]);
         }
 
+        for (int screen_align_index = 0; screen_align_index < Utils::to_integral(Terminal::ScreenAlignment::ALIGNMENT_COUNT); ++screen_align_index)
+        {
+            m_ui.alignment_combo->addItem(SCREEN_ALIGNMENT_LABELS[screen_align_index]);
+        }
+
         for (int text_color_index = 0; text_color_index < Utils::to_integral(ScenarioManager::TextColor::COLOR_COUNT); ++text_color_index)
         {
             m_ui.text_color_combo->addItem(TEXT_COLOR_LABELS[text_color_index]);
@@ -133,6 +176,8 @@ namespace HuxApp
             m_ui.text_color_combo->setItemData(text_color_index, COLOR_COMBO_TEXT_COLORS[text_color_index], Qt::ForegroundRole);
         }
 
+        m_ui.screen_type_combo->setCurrentIndex(0);
+        m_ui.alignment_combo->setCurrentIndex(0);
         m_ui.text_color_combo->setCurrentIndex(0);
         color_combo_activated(0); // Set the button to the appropriate color
     }
@@ -140,16 +185,18 @@ namespace HuxApp
     void ScreenEditTab::enable_controls(bool enable)
     {
         m_ui.resource_id_edit->setEnabled(enable);
+        m_ui.alignment_combo->setEnabled(enable);
         m_ui.screen_text_edit->setEnabled(enable);
         m_ui.bold_button->setEnabled(enable);
         m_ui.italic_button->setEnabled(enable);
         m_ui.underline_button->setEnabled(enable);
+        m_ui.text_color_button->setEnabled(enable);
         m_ui.text_color_combo->setEnabled(enable);
     }
 
     void ScreenEditTab::validate_screen(Terminal::ScreenType screen_type)
     {
-        const bool valid_screen = (screen_type != Terminal::ScreenType::NONE);
+        const bool valid_screen = (screen_type != Terminal::ScreenType::NONE) && (screen_type != Terminal::ScreenType::TAG) && (screen_type != Terminal::ScreenType::STATIC);
         enable_controls(valid_screen);
 
         // Enable/disable specific controls based on screen type
@@ -160,6 +207,11 @@ namespace HuxApp
             break;
         case Terminal::ScreenType::CHECKPOINT:
             m_ui.resource_id_edit->setReadOnly(false);
+            break;
+        case Terminal::ScreenType::TAG:
+        case Terminal::ScreenType::STATIC:
+            m_ui.resource_id_edit->setReadOnly(false);
+            m_ui.resource_id_edit->setEnabled(true);
             break;
         default:
             m_ui.resource_id_edit->setEnabled(true && valid_screen);
@@ -172,7 +224,8 @@ namespace HuxApp
     {
         if (index != Utils::to_integral(m_screen_data.m_type))
         {
-            validate_screen(static_cast<Terminal::ScreenType>(index)); // We changed the screen type, so we need to make sure the correct controls are available
+            m_screen_data.m_type = static_cast<Terminal::ScreenType>(index);
+            validate_screen(m_screen_data.m_type); // We changed the screen type, so we need to make sure the correct controls are available
             screen_edited_internal();
         }
     }
@@ -200,10 +253,22 @@ namespace HuxApp
 
     void ScreenEditTab::screen_resource_edited(const QString& text)
     {
-        const int new_resource_id = text.toInt();
-        if (m_screen_data.m_resource_id != new_resource_id)
+        if (m_screen_data.m_type != Terminal::ScreenType::TAG)
         {
-            m_screen_data.m_resource_id = new_resource_id;
+            const int new_resource_id = text.toInt();
+            if (m_screen_data.m_resource_id != new_resource_id)
+            {
+                m_screen_data.m_resource_id = new_resource_id;
+                screen_edited_internal();
+            }
+        }
+    }
+
+    void ScreenEditTab::screen_alignment_combo_activated(int index)
+    {
+        if (index != Utils::to_integral(m_screen_data.m_alignment))
+        {      
+            m_screen_data.m_alignment = static_cast<Terminal::ScreenAlignment>(index);
             screen_edited_internal();
         }
     }

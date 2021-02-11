@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QHBoxLayout" name="screen_attribute_hbox" stretch="0,1,0,1">
+    <layout class="QHBoxLayout" name="screen_attribute_hbox" stretch="0,1,0,1,0,1">
      <item>
       <widget class="QLabel" name="screen_type_label">
        <property name="text">
@@ -35,6 +35,16 @@
      </item>
      <item>
       <widget class="QLineEdit" name="resource_id_edit"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="alignment_label">
+       <property name="text">
+        <string>Alignment:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="alignment_combo"/>
      </item>
     </layout>
    </item>

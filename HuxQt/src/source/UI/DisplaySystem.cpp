@@ -25,6 +25,7 @@ namespace HuxApp
 		constexpr qreal DEFAULT_VERTICAL_MARGIN = 27;
 
 		constexpr const char* MISSING_RESOURCE_IMAGE = ":/HuxQt/missing.png";
+		constexpr const char* STATIC_SCREEN_IMAGE = ":/HuxQt/static.png";
 
 		enum class DisplayColors
 		{
@@ -211,8 +212,15 @@ namespace HuxApp
 		{
 		case Terminal::ScreenType::INFORMATION:
 		case Terminal::ScreenType::CHECKPOINT:
+		case Terminal::ScreenType::TAG:
 			// Hide image, text only!
 			view.m_image_item->setVisible(false);
+			return;
+		case Terminal::ScreenType::STATIC:
+			view.m_image_item->setVisible(true);
+			view.m_image_item->setPixmap(QPixmap(STATIC_SCREEN_IMAGE));
+			view.m_image_item->setPos(0, 0);
+			view.m_display_data.m_resource_id = -1;
 			return;
 		default:
 			view.m_image_item->setVisible(true);
@@ -228,23 +236,65 @@ namespace HuxApp
 
 		// Reposition according to the type
 		const QRectF image_rect = view.m_image_item->boundingRect();
+		const qreal vertical_offset = (TERMINAL_HEIGHT - image_rect.height()) * 0.5;
+		qreal horizontal_offset = 0;
 
 		switch (data.m_screen_type)
 		{
 		case Terminal::ScreenType::LOGON:
 		case Terminal::ScreenType::LOGOFF:
 			// Move to center
-			view.m_image_item->setPos(((TERMINAL_WIDTH - image_rect.width()) * 0.5) , (TERMINAL_HEIGHT - image_rect.height()) * 0.5);
+			horizontal_offset = (TERMINAL_WIDTH - image_rect.width()) * 0.5;
 			break;
 		case Terminal::ScreenType::PICT:
-			// Move to side
-			view.m_image_item->setPos(((TERMINAL_WIDTH * 0.5) - image_rect.width()) * 0.5, (TERMINAL_HEIGHT - image_rect.height()) * 0.5);
+		{	
+			// Check alignment
+			switch (data.m_alignment)
+			{
+			case Terminal::ScreenAlignment::LEFT:
+				horizontal_offset = ((TERMINAL_WIDTH * 0.5) - image_rect.width()) * 0.5;
+				break;
+			case Terminal::ScreenAlignment::CENTER:
+				horizontal_offset = (TERMINAL_WIDTH - image_rect.width()) * 0.5;
+				break;
+			case Terminal::ScreenAlignment::RIGHT:
+				horizontal_offset = ((TERMINAL_WIDTH * 1.5) - image_rect.width()) * 0.5;
+				break;
+			}
+		}
 			break;
 		}
+
+		view.m_image_item->setPos(horizontal_offset, vertical_offset);
 	}
 
 	void DisplaySystem::update_text(ViewData& view, const DisplayData& data)
 	{
+		switch (data.m_screen_type)
+		{
+		case Terminal::ScreenType::PICT:
+		{
+			if (data.m_alignment == Terminal::ScreenAlignment::CENTER)
+			{
+				// Do not display centered PICT text!
+				view.m_image_item->setVisible(false);
+				return;
+			}
+			else
+			{
+				view.m_text_item->setVisible(true);
+			}
+		}
+			break;
+		case Terminal::ScreenType::TAG:
+		case Terminal::ScreenType::STATIC:
+			view.m_text_item->setVisible(false);
+			return;
+		default:
+			view.m_text_item->setVisible(true);
+			break;
+		}
+
 		// Use HTML to handle formatting
 		view.m_display_data.m_text = data.m_text;
 		view.m_text_item->setHtml(view.m_display_data.m_text);
@@ -270,10 +320,24 @@ namespace HuxApp
 			break;
 		case Terminal::ScreenType::PICT:
 		case Terminal::ScreenType::CHECKPOINT:
-			// Move to the side
-			view.m_text_item->setPos(TERMINAL_WIDTH * 0.5, TERMINAL_BORDER_HEIGHT);
-			view.m_text_item->setTextWidth(TERMINAL_WIDTH * 0.5);
+		{
+			// Check alignment (text must be opposite the image)
+			qreal horizontal_offset = 0;
+			switch (data.m_alignment)
+			{
+			case Terminal::ScreenAlignment::LEFT:
+				horizontal_offset = TERMINAL_WIDTH * 0.5;
+				break;
+			case Terminal::ScreenAlignment::RIGHT:
+				horizontal_offset = TERMINAL_BORDER_HEIGHT;
+				break;
+			}
+
+			// Reposition text
+			view.m_text_item->setPos(horizontal_offset, TERMINAL_BORDER_HEIGHT);
+			view.m_text_item->setTextWidth((TERMINAL_WIDTH * 0.5) - TERMINAL_BORDER_HEIGHT);
 			break;
+		}
 		}
 
 		// Have to do this to make sure the line spacing is correct (might be redundant?)

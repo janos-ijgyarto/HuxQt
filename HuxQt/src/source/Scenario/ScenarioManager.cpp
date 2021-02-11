@@ -26,6 +26,8 @@ namespace HuxApp
 			LOGOFF,
 			INTERLEVEL_TELEPORT,
 			INTRALEVEL_TELEPORT,
+			TAG,
+			STATIC,
 			KEYWORD_COUNT,
 			NON_KEYWORD = KEYWORD_COUNT
 		};
@@ -42,7 +44,15 @@ namespace HuxApp
 			"#CHECKPOINT",
 			"#LOGOFF",
 			"#INTERLEVEL TELEPORT",
-			"#INTRALEVEL TELEPORT"
+			"#INTRALEVEL TELEPORT",
+			"#TAG",
+			"#STATIC"
+		};
+
+		constexpr const char* SCREEN_ALIGNMENT_KEYWORDS[Utils::to_integral(Terminal::ScreenAlignment::ALIGNMENT_COUNT)] = {
+			"LEFT",
+			"CENTER",
+			"RIGHT"
 		};
 
 		constexpr const char* get_script_keyword(ScriptKeywords keyword) { return SCRIPT_KEYWORD_STRINGS[Utils::to_integral(keyword)]; }
@@ -60,6 +70,10 @@ namespace HuxApp
 				return get_script_keyword(ScriptKeywords::CHECKPOINT);
 			case Terminal::ScreenType::LOGOFF:
 				return get_script_keyword(ScriptKeywords::LOGOFF);
+			case Terminal::ScreenType::TAG:
+				return get_script_keyword(ScriptKeywords::TAG);
+			case Terminal::ScreenType::STATIC:
+				return get_script_keyword(ScriptKeywords::STATIC);
 			}
 
 			return "";
@@ -163,6 +177,42 @@ namespace HuxApp
 			return 0;
 		}
 
+		Terminal::ScreenAlignment get_screen_alignment(const QString& alignment_text)
+		{
+			if (alignment_text == "CENTER")
+			{
+				return Terminal::ScreenAlignment::CENTER;
+			}
+			else if (alignment_text == "RIGHT")
+			{
+				return Terminal::ScreenAlignment::RIGHT;
+			}
+			else
+			{
+				return Terminal::ScreenAlignment::LEFT;
+			}
+		}
+
+		bool screen_has_text(const Terminal::Screen& screen)
+		{
+			switch (screen.m_type)
+			{
+			case Terminal::ScreenType::NONE:
+			case Terminal::ScreenType::TAG:
+			case Terminal::ScreenType::STATIC:
+				return false;
+			case Terminal::ScreenType::PICT:
+			{
+				if (screen.m_alignment == Terminal::ScreenAlignment::CENTER)
+				{
+					return false;
+				}
+			}
+			}
+
+			return true;
+		}
+
 		void export_terminal_screens(const std::vector<Terminal::Screen>& terminal_screens, QString& terminal_script_text)
 		{
 			for (const Terminal::Screen& current_screen : terminal_screens)
@@ -175,6 +225,19 @@ namespace HuxApp
 				case Terminal::ScreenType::INFORMATION:
 					terminal_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::INFORMATION));
 					break;
+				case Terminal::ScreenType::PICT:
+				{
+					if (current_screen.m_alignment == Terminal::ScreenAlignment::LEFT)
+					{
+						terminal_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::PICT), QString::number(current_screen.m_resource_id));
+					}
+					else
+					{
+						const int alignment_index = Utils::to_integral(current_screen.m_alignment);
+						terminal_script_text += QStringLiteral("%1 %2 %3\n").arg(get_script_keyword(ScriptKeywords::PICT), QString::number(current_screen.m_resource_id), SCREEN_ALIGNMENT_KEYWORDS[alignment_index]);
+					}
+					break;
+				}
 				default:
 					// Add the keyword and the resource ID
 					terminal_script_text += QStringLiteral("%1 %2\n").arg(get_screen_keyword(current_screen.m_type), QString::number(current_screen.m_resource_id));
@@ -182,7 +245,7 @@ namespace HuxApp
 				}
 
 				// Add any text we might have
-				if ((current_screen.m_type != Terminal::ScreenType::NONE) && !current_screen.m_script.isEmpty())
+				if (screen_has_text(current_screen) && !current_screen.m_script.isEmpty())
 				{
 					terminal_script_text += current_screen.m_script;
 					terminal_script_text += "\n";
@@ -443,6 +506,12 @@ namespace HuxApp
 						QStringList line_split = m_current_line.split(' ');
 						current_screen.m_resource_id = line_split.at(1).toInt();
 						current_screen.m_type = Terminal::ScreenType::PICT;
+
+						if (line_split.length() > 2)
+						{
+							// PICT also has alignment info
+							current_screen.m_alignment = get_screen_alignment(line_split.at(2));
+						}
 					}
 					break;
 					case ScriptKeywords::CHECKPOINT:
@@ -467,6 +536,22 @@ namespace HuxApp
 						QStringList line_split = m_current_line.split(' ');
 						teleport_info.m_index = line_split.at(2).toInt();
 						teleport_info.m_type = (m_current_line_type == ScriptKeywords::INTERLEVEL_TELEPORT) ? Terminal::TeleportType::INTERLEVEL : Terminal::TeleportType::INTRALEVEL;
+					}
+					break;
+					case ScriptKeywords::TAG:
+					{
+						// Tag screen, get the tag index
+						QStringList line_split = m_current_line.split(' ');
+						current_screen.m_resource_id = line_split.at(1).toInt();
+						current_screen.m_type = Terminal::ScreenType::TAG;
+					}
+					break;
+					case ScriptKeywords::STATIC:
+					{
+						// Static screen, get the duration
+						QStringList line_split = m_current_line.split(' ');
+						current_screen.m_resource_id = line_split.at(1).toInt();
+						current_screen.m_type = Terminal::ScreenType::STATIC;
 					}
 					break;
 					default:

@@ -34,7 +34,9 @@ namespace HuxApp
             "INFORMATION",
             "PICT",
             "CHECKPOINT",
-            "LOGOFF"
+            "LOGOFF",
+            "TAG",
+            "STATIC"
         };
 
         enum class ScenarioNodeType
@@ -86,6 +88,10 @@ namespace HuxApp
                 return QStringLiteral("CHECKPOINT %1").arg(current_screen.m_resource_id);
             case Terminal::ScreenType::LOGOFF:
                 return QStringLiteral("LOGOFF %1").arg(current_screen.m_resource_id);
+            case Terminal::ScreenType::TAG:
+                return QStringLiteral("TAG %1").arg(current_screen.m_resource_id);
+            case Terminal::ScreenType::STATIC:
+                return QStringLiteral("STATIC %1").arg(current_screen.m_resource_id);
             }
 
             return "";
@@ -191,6 +197,7 @@ namespace HuxApp
                 display_data.m_resource_id = screen_data.m_resource_id;
                 display_data.m_text = screen_data.m_display_text;
                 display_data.m_screen_type = screen_data.m_type;
+                display_data.m_alignment = screen_data.m_alignment;
 
                 core.get_display_system().update_display(DisplaySystem::View::MAIN_WINDOW, display_data);
             }
@@ -408,6 +415,9 @@ namespace HuxApp
         screen_group_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_MODIFIED), true);
         screen_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_MODIFIED), true);
         
+        // Update the tree item text
+        screen_item->setText(0, m_internal->get_screen_string(screen_data));
+
         if (screen_item == m_internal->m_selected_screen_item)
         {
             display_current_screen();
@@ -435,6 +445,10 @@ namespace HuxApp
             return;
         }
 
+        if (m_internal->m_screen_editor)
+        {
+            delete m_internal->m_screen_editor;
+        }
         event->accept();
     }
 

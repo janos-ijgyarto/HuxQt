@@ -27,12 +27,23 @@ namespace HuxApp
 			PICT,
 			CHECKPOINT,
 			LOGOFF,
+			TAG,
+			STATIC,
 			TYPE_COUNT
+		};
+		
+		enum class ScreenAlignment
+		{
+			LEFT,
+			CENTER,
+			RIGHT,
+			ALIGNMENT_COUNT
 		};
 
 		struct Screen
 		{
 			ScreenType m_type = ScreenType::NONE;
+			ScreenAlignment m_alignment = ScreenAlignment::LEFT; // Only relevant for PICT (possibly CHECKPOINT?)
 			int m_resource_id = -1;
 			QString m_display_text;
 			QString m_script;
@@ -53,8 +64,6 @@ namespace HuxApp
 		const Teleport& get_teleport_info(bool unfinished) const { return (unfinished ? m_unfinished_teleport : m_finished_teleport); }
 
 		const QString& get_comments() const { return m_comments; }
-
-		QString print_terminal_script() const;
 	private:
 		int m_id;
 
