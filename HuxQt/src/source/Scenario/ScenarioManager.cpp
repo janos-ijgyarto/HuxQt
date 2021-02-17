@@ -835,4 +835,155 @@ namespace HuxApp
 
 		return exported_ao_text;
 	}
+
+	QStringList ScenarioManager::gather_additional_levels(const Scenario& scenario)
+	{
+		// Gather a set of the directory names that were already added
+		QSet<QString> existing_levels;
+		for (const Level& current_level : scenario.m_levels)
+		{
+			existing_levels << current_level.get_level_dir_name();
+		}
+
+		// Create list of directories in the scenario folder which aren't in the current list of levels
+		QDirIterator dir_it(scenario.m_merge_folder_path, QDir::Dirs | QDir::NoDotAndDotDot);
+		QStringList non_scripted_levels;
+		while (dir_it.hasNext())
+		{
+			dir_it.next();
+			const QString current_dir_name = dir_it.fileInfo().baseName();
+			// Make sure the folder isn't the Resources folder, nor is it an already added level
+			if ((current_dir_name != "Resources") && !existing_levels.contains(current_dir_name))
+			{
+				non_scripted_levels << current_dir_name;
+			}
+		}
+
+		// Finally check the level directory contents to find out which ones have a valid level
+		QStringList available_levels;
+		for (const QString& current_level_name : non_scripted_levels)
+		{
+			const QDir current_level_dir(scenario.m_merge_folder_path + "/" + current_level_name);
+			const QFileInfoList file_info_list = current_level_dir.entryInfoList(QDir::Files);
+
+			for (const QFileInfo& current_file : file_info_list)
+			{
+				const QString suffix = current_file.completeSuffix();
+				if (suffix == "sceA")
+				{
+					// We found a level file, so we can add it to the list
+					available_levels << current_file.baseName();
+					available_levels << current_level_name;
+				}
+			}
+		}
+
+		return available_levels;
+	}
+
+	bool ScenarioManager::add_scenario_level(Scenario& scenario, const QString& level_dir_name)
+	{
+		const QDir new_level_dir(scenario.get_merge_folder_path() + "/" + level_dir_name);
+		const QFileInfoList file_info_list = new_level_dir.entryInfoList(QDir::Files);
+		
+		for (const QFileInfo& current_file : file_info_list)
+		{
+			if (current_file.completeSuffix() == "sceA")
+			{
+				// Use the level file name as the name for our terminal script name
+				Level new_level;
+				new_level.m_name = current_file.baseName();
+				new_level.m_level_dir_name = level_dir_name;
+				new_level.m_level_script_name = current_file.baseName() + "term.txt";
+
+				// Add level to the scenario
+				scenario.m_levels.push_back(new_level);
+				return true;
+			}
+		}
+
+		// Something went wrong
+		return false;
+	}
+
+	bool ScenarioManager::delete_scenario_level_script(Scenario& scenario, size_t level_index)
+	{
+		const Level& selected_level = scenario.m_levels[level_index];
+		const QString level_script_path = scenario.get_merge_folder_path() + "/" + selected_level.m_level_dir_name + "/" + selected_level.m_level_script_name;
+
+		if (QFile::exists(level_script_path))
+		{
+			return QFile::remove(level_script_path);
+		}
+		return true;
+	}
+
+	void ScenarioManager::remove_scenario_level(Scenario& scenario, size_t level_index)
+	{
+		scenario.m_levels.erase(scenario.m_levels.begin() + level_index);
+	}
+
+	void ScenarioManager::add_level_terminal(Level& level)
+	{
+		int new_terminal_id = level.m_terminals.empty() ? 0 : INT_MIN;
+		for (const Terminal& current_terminal : level.m_terminals)
+		{
+			if (current_terminal.m_id >= new_terminal_id)
+			{
+				new_terminal_id = current_terminal.m_id + 1;
+			}
+		}
+
+		level.m_terminals.emplace_back();
+		Terminal& new_terminal = level.m_terminals.back();
+		new_terminal.m_id = new_terminal_id;
+	}
+
+	void ScenarioManager::move_level_terminal(Level& level, size_t terminal_index, size_t new_index)
+	{
+		if (new_index < terminal_index)
+		{
+			std::rotate(level.m_terminals.begin() + new_index, level.m_terminals.begin() + terminal_index, level.m_terminals.begin() + terminal_index);
+		}
+		else if (new_index > terminal_index)
+		{
+			std::rotate(level.m_terminals.begin() + terminal_index, level.m_terminals.begin() + new_index, level.m_terminals.begin() + new_index);
+		}
+	}
+
+	void ScenarioManager::remove_level_terminal(Level& level, size_t terminal_index)
+	{
+		level.m_terminals.erase(level.m_terminals.begin() + terminal_index);
+	}
+
+	void ScenarioManager::add_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished)
+	{
+		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		screen_vec.emplace(screen_vec.begin() + screen_index);
+	}
+
+	void ScenarioManager::move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished)
+	{
+		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		if (new_index < screen_index)
+		{
+			std::rotate(screen_vec.begin() + new_index, screen_vec.begin() + screen_index, screen_vec.begin() + screen_index);
+		}
+		else if (new_index > screen_index)
+		{
+			std::rotate(screen_vec.begin() + screen_index, screen_vec.begin() + new_index, screen_vec.begin() + new_index);
+		}
+	}
+
+	void ScenarioManager::remove_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished)
+	{
+		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		screen_vec.erase(screen_vec.begin() + screen_index);
+	}
+
+	void ScenarioManager::clear_terminal_screen_group(Terminal& terminal, bool unfinished)
+	{
+		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		screen_vec.clear();
+	}
 }

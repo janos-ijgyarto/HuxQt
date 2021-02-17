@@ -33,7 +33,7 @@
        <widget class="QWidget" name="gridLayoutWidget">
         <layout class="QGridLayout" name="scenario_browser_grid">
          <item row="1" column="0" colspan="2">
-          <widget class="QTreeWidget" name="scenario_contents_tree">
+          <widget class="QTreeWidget" name="scenario_browser_tree">
            <attribute name="headerVisible">
             <bool>false</bool>
            </attribute>
@@ -52,7 +52,7 @@
           </widget>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="scenario_contents_label">
+          <widget class="QLabel" name="scenario_browser_label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
              <horstretch>0</horstretch>

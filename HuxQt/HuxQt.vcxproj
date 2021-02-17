@@ -108,6 +108,7 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <QtUic Include="src\forms\AddLevelDialog.ui" />
     <QtUic Include="src\forms\BrowsePictDialog.ui" />
     <QtUic Include="src\forms\HuxQt.ui" />
     <QtUic Include="src\forms\PreviewConfigWindow.ui" />
@@ -124,6 +125,7 @@
     <ClInclude Include="src\include\Scenario\Terminal.h" />
     <ClInclude Include="src\include\stdafx.h" />
     <QtMoc Include="src\include\UI\BrowsePictDialog.h" />
+    <QtMoc Include="src\include\UI\AddLevelDialog.h" />
     <ClInclude Include="src\include\UI\DisplayData.h" />
     <ClInclude Include="src\include\UI\DisplaySystem.h" />
     <QtMoc Include="src\include\UI\PreviewConfigWindow.h" />
@@ -143,6 +145,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\source\UI\AddLevelDialog.cpp" />
     <ClCompile Include="src\source\UI\BrowsePictDialog.cpp" />
     <ClCompile Include="src\source\UI\DisplaySystem.cpp" />
     <ClCompile Include="src\source\UI\HuxQt.cpp" />

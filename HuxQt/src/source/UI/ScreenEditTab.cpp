@@ -206,8 +206,6 @@ namespace HuxApp
             m_ui.resource_id_edit->setEnabled(false);
             break;
         case Terminal::ScreenType::CHECKPOINT:
-            m_ui.resource_id_edit->setReadOnly(false);
-            break;
         case Terminal::ScreenType::TAG:
         case Terminal::ScreenType::STATIC:
             m_ui.resource_id_edit->setReadOnly(false);
@@ -253,14 +251,11 @@ namespace HuxApp
 
     void ScreenEditTab::screen_resource_edited(const QString& text)
     {
-        if (m_screen_data.m_type != Terminal::ScreenType::TAG)
+        const int new_resource_id = text.toInt();
+        if (m_screen_data.m_resource_id != new_resource_id)
         {
-            const int new_resource_id = text.toInt();
-            if (m_screen_data.m_resource_id != new_resource_id)
-            {
-                m_screen_data.m_resource_id = new_resource_id;
-                screen_edited_internal();
-            }
+            m_screen_data.m_resource_id = new_resource_id;
+            screen_edited_internal();
         }
     }
 

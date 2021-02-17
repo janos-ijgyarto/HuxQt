@@ -7,7 +7,11 @@ namespace HuxApp
 	{
 	public:
 		const QString& get_name() const { return m_name; }
+		void set_name(const QString& name) { m_name = name; }
+
 		const QString& get_level_dir_name() const { return m_level_dir_name; }
+		void set_level_dir_name(const QString& level_dir_name) { m_level_dir_name = level_dir_name; }
+
 		const QString& get_level_script_name() const { return m_level_script_name; }
 		
 		bool is_modified() const { return m_modified; }

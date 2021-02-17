@@ -64,6 +64,22 @@ namespace HuxApp
 		}
 	}
 
+	void ScreenEditorWindow::close_screen(QTreeWidgetItem* screen_item)
+	{
+		const int screen_tab_index = find_screen_index(screen_item);
+		if (screen_tab_index != -1)
+		{
+			QWidget* selected_tab_widget = m_internal->m_ui.screen_edit_tabs->widget(screen_tab_index);
+			ScreenEditTab* selected_tab = qobject_cast<ScreenEditTab*>(selected_tab_widget);
+
+			if(prompt_save(selected_tab))
+			{
+				m_internal->m_ui.screen_edit_tabs->removeTab(screen_tab_index);
+				selected_tab->deleteLater();
+			}
+		}
+	}
+
 	void ScreenEditorWindow::remove_screen(QTreeWidgetItem* screen_item)
 	{
 		const int screen_tab_index = find_screen_index(screen_item);
@@ -72,11 +88,8 @@ namespace HuxApp
 			QWidget* selected_tab_widget = m_internal->m_ui.screen_edit_tabs->widget(screen_tab_index);
 			ScreenEditTab* selected_tab = qobject_cast<ScreenEditTab*>(selected_tab_widget);
 
-			if (prompt_save(selected_tab))
-			{
-				m_internal->m_ui.screen_edit_tabs->removeTab(screen_tab_index);
-				selected_tab->deleteLater();
-			}
+			m_internal->m_ui.screen_edit_tabs->removeTab(screen_tab_index);
+			selected_tab->deleteLater();
 		}
 	}
 

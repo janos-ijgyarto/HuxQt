@@ -9,6 +9,8 @@
 
 #include "UI/DisplaySystem.h"
 #include "UI/DisplayData.h"
+
+#include "UI/AddLevelDialog.h"
 #include "UI/TerminalEditDialog.h"
 #include "UI/ScreenEditorWindow.h"
 #include "UI/PreviewConfigWindow.h"
@@ -59,6 +61,11 @@ namespace HuxApp
         {
             return static_cast<ScenarioNodeType>(item->data(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_TYPE)).toInt());
         }
+
+        bool is_screen_node_opened(const QTreeWidgetItem* item)
+        {
+            return item->data(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_OPENED)).toBool();
+        }
     }
 
     struct HuxQt::Internal
@@ -67,6 +74,7 @@ namespace HuxApp
 
         Scenario m_scenario;
         bool m_scenario_edited = false;
+        QSet<QString> m_deleted_level_paths;
 
         QTreeWidgetItem* m_selected_terminal_item = nullptr;
         QTreeWidgetItem* m_selected_screen_item = nullptr;
@@ -78,6 +86,8 @@ namespace HuxApp
         {
             switch (current_screen.m_type)
             {
+            case Terminal::ScreenType::NONE:
+                return QStringLiteral("NONE");
             case Terminal::ScreenType::LOGON:
                 return QStringLiteral("LOGON %1").arg(current_screen.m_resource_id);
             case Terminal::ScreenType::INFORMATION:
@@ -139,7 +149,7 @@ namespace HuxApp
         void get_terminal_index_path(QTreeWidgetItem* terminal_item, int& level_index, int& terminal_index)
         {
             QTreeWidgetItem* level_item = terminal_item->parent();
-            level_index = m_ui.scenario_contents_tree->indexOfTopLevelItem(level_item);
+            level_index = m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
             terminal_index = level_item->indexOfChild(terminal_item);
         }
 
@@ -210,7 +220,7 @@ namespace HuxApp
 
         QTreeWidgetItem* find_terminal_node(const QString& terminal_path)
         {
-            QTreeWidgetItemIterator scenario_tree_it(m_ui.scenario_contents_tree);
+            QTreeWidgetItemIterator scenario_tree_it(m_ui.scenario_browser_tree);
             while (QTreeWidgetItem* current_item = *scenario_tree_it)
             {
                 if (get_scenario_node_type(current_item) == ScenarioNodeType::TERMINAL)
@@ -259,7 +269,7 @@ namespace HuxApp
 
     void HuxQt::reset_scenario_ui()
     {
-        m_internal->m_ui.scenario_contents_tree->clear();
+        m_internal->m_ui.scenario_browser_tree->clear();
         m_internal->m_ui.scenario_name_label->setText(m_internal->m_scenario.get_name());
 
         // Reset the font
@@ -271,7 +281,7 @@ namespace HuxApp
         const std::vector<Level>& level_vec = m_internal->m_scenario.get_levels();
         for (const Level& current_level : level_vec)
         {
-            QTreeWidgetItem* level_tree_item = new QTreeWidgetItem(m_internal->m_ui.scenario_contents_tree);
+            QTreeWidgetItem* level_tree_item = new QTreeWidgetItem(m_internal->m_ui.scenario_browser_tree);
             level_tree_item->setText(0, current_level.get_name());
             level_tree_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_TYPE), Utils::to_integral(ScenarioNodeType::LEVEL));
             level_tree_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_ID), current_level.get_name());
@@ -312,6 +322,23 @@ namespace HuxApp
     }
 
     QGraphicsView* HuxQt::get_graphics_view() { return m_internal->m_ui.terminal_preview; }
+
+    bool HuxQt::add_level(const QString& level_name, const QString& level_dir_name)
+    {
+        if (m_core->get_scenario_manager().add_scenario_level(m_internal->m_scenario, level_dir_name))
+        {
+            QTreeWidgetItem* level_tree_item = new QTreeWidgetItem(m_internal->m_ui.scenario_browser_tree);
+            level_tree_item->setText(0, level_name);
+            level_tree_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_TYPE), Utils::to_integral(ScenarioNodeType::LEVEL));
+            level_tree_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_ID), level_name);
+            return true;
+        }
+        else
+        {
+            QMessageBox::warning(this, "Scenario Editor Error", QStringLiteral("Error loading level \"%1\"!").arg(level_name));
+            return false;
+        }
+    }
 
     bool HuxQt::save_terminal_info(const QString& terminal_path, const Terminal& terminal_info)
     {
@@ -418,6 +445,9 @@ namespace HuxApp
         // Update the tree item text
         screen_item->setText(0, m_internal->get_screen_string(screen_data));
 
+        // Update the screen in the editor
+        m_internal->m_screen_editor->update_screen(screen_item, get_screen_path(screen_item));
+
         if (screen_item == m_internal->m_selected_screen_item)
         {
             display_current_screen();
@@ -457,7 +487,7 @@ namespace HuxApp
         m_internal->m_ui.action_save_scenario->setEnabled(false);
         m_internal->m_ui.action_export_scenario_scripts->setEnabled(false);
 
-        m_internal->m_ui.scenario_contents_tree->setColumnCount(1);
+        m_internal->m_ui.scenario_browser_tree->setColumnCount(1);
         
         m_internal->m_ui.terminal_info_table->setRowCount(3);
         m_internal->m_ui.terminal_info_table->setColumnCount(1);
@@ -482,10 +512,10 @@ namespace HuxApp
         connect(m_internal->m_ui.action_terminal_preview_config, &QAction::triggered, this, &HuxQt::open_preview_config);
 
         // Tree
-        m_internal->m_ui.scenario_contents_tree->setContextMenuPolicy(Qt::CustomContextMenu);
-        connect(m_internal->m_ui.scenario_contents_tree, &QTreeWidget::itemClicked, this, &HuxQt::scenario_tree_clicked);
-        connect(m_internal->m_ui.scenario_contents_tree, &QTreeWidget::itemDoubleClicked, this, &HuxQt::scenario_tree_double_clicked);
-        connect(m_internal->m_ui.scenario_contents_tree, &QTreeWidget::customContextMenuRequested, this, &HuxQt::scenario_tree_context_menu);
+        m_internal->m_ui.scenario_browser_tree->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_internal->m_ui.scenario_browser_tree, &QTreeWidget::itemClicked, this, &HuxQt::scenario_tree_clicked);
+        connect(m_internal->m_ui.scenario_browser_tree, &QTreeWidget::itemDoubleClicked, this, &HuxQt::scenario_tree_double_clicked);
+        connect(m_internal->m_ui.scenario_browser_tree, &QTreeWidget::customContextMenuRequested, this, &HuxQt::scenario_tree_context_menu);
 
         // Buttons
         connect(m_internal->m_ui.terminal_first_button, &QPushButton::clicked, this, &HuxQt::terminal_first_clicked);
@@ -683,7 +713,7 @@ namespace HuxApp
     void HuxQt::scenario_tree_context_menu(const QPoint& point)
     {
         // Check if we clicked on an item
-        QTreeWidgetItem* selected_item = m_internal->m_ui.scenario_contents_tree->itemAt(point);
+        QTreeWidgetItem* selected_item = m_internal->m_ui.scenario_browser_tree->itemAt(point);
         if (selected_item)
         {
             const ScenarioNodeType node_type = get_scenario_node_type(selected_item);
@@ -691,89 +721,321 @@ namespace HuxApp
             switch (node_type)
             {
             case ScenarioNodeType::LEVEL:
-                context_menu.addAction("Add Terminal", this, &HuxQt::add_terminal);
-                break;
+            {
+                context_menu.addAction("Add Terminal", this, &HuxQt::add_terminal_action);
+                context_menu.addAction("Remove Level", this, &HuxQt::remove_level_action);
+            }
+            break;
             case ScenarioNodeType::TERMINAL:
             {
-                QAction* move_up_action = context_menu.addAction("Move Terminal Up", this, &HuxQt::move_terminal);
-                move_up_action->setProperty("MoveUp", true);
-                QAction* move_down_action = context_menu.addAction("Move Terminal Down", this, &HuxQt::move_terminal);
-                move_down_action->setProperty("MoveUp", false);
-                context_menu.addAction("Remove Terminal", this, &HuxQt::remove_terminal);
+                QTreeWidgetItem* level_item = selected_item->parent();
+                const int terminal_index = level_item->indexOfChild(selected_item);
+
+                if(terminal_index > 0)
+                {
+                    QAction* move_up_action = context_menu.addAction("Move Terminal Up", this, &HuxQt::move_terminal_action);
+                    move_up_action->setProperty("MoveUp", true);
+                }
+                if (terminal_index < (level_item->childCount() - 1))
+                {
+                    QAction* move_down_action = context_menu.addAction("Move Terminal Down", this, &HuxQt::move_terminal_action);
+                    move_down_action->setProperty("MoveUp", false);
+                }
+                context_menu.addAction("Remove Terminal", this, &HuxQt::remove_terminal_action);
             }
             break;
             case ScenarioNodeType::SCREEN_GROUP:
             {
-                context_menu.addAction("Add Screen", this, &HuxQt::add_screen);
-                context_menu.addAction("Clear Group", this, &HuxQt::clear_group);
+                context_menu.addAction("Add Screen", this, &HuxQt::add_screen_action);
+                if (selected_item->childCount() > 0)
+                {
+                    context_menu.addAction("Clear Group", this, &HuxQt::clear_group_action);
+                }
             }
+            break;
             case ScenarioNodeType::SCREEN:
             {
-                QAction* add_above_action = context_menu.addAction("Add Screen Above", this, &HuxQt::add_screen);
+                QAction* add_above_action = context_menu.addAction("Add Screen Above", this, &HuxQt::add_screen_action);
                 add_above_action->setProperty("AddAbove", true);
-                QAction* add_below_action = context_menu.addAction("Add Screen Below", this, &HuxQt::add_screen);
+                QAction* add_below_action = context_menu.addAction("Add Screen Below", this, &HuxQt::add_screen_action);
                 add_below_action->setProperty("AddAbove", false);
 
-                QAction* move_up_action = context_menu.addAction("Move Screen Up", this, &HuxQt::move_screen);
-                move_up_action->setProperty("MoveUp", true);
-                QAction* move_down_action = context_menu.addAction("Move Screen Down", this, &HuxQt::move_screen);
-                move_down_action->setProperty("MoveUp", false);
+                QTreeWidgetItem* screen_group_item = selected_item->parent();
+                const int screen_index = screen_group_item->indexOfChild(selected_item);
 
-                context_menu.addAction("Remove Screen", this, &HuxQt::remove_screen);
+                if (screen_index > 0)
+                {
+                    QAction* move_up_action = context_menu.addAction("Move Screen Up", this, &HuxQt::move_screen_action);
+                    move_up_action->setProperty("MoveUp", true);
+                }
+                if (screen_index < (screen_group_item->childCount() - 1))
+                {
+                    QAction* move_down_action = context_menu.addAction("Move Screen Down", this, &HuxQt::move_screen_action);
+                    move_down_action->setProperty("MoveUp", false);
+                }
+
+                context_menu.addAction("Remove Screen", this, &HuxQt::remove_screen_action);
             }
-                break;
+            break;
             }
 
-            const QPoint global_pos = m_internal->m_ui.scenario_contents_tree->mapToGlobal(point);
+            const QPoint global_pos = m_internal->m_ui.scenario_browser_tree->mapToGlobal(point);
             context_menu.exec(global_pos);
         }
         else
         {
             QMenu context_menu;
-            context_menu.addAction("Add Level", this, &HuxQt::add_level);
-            const QPoint global_pos = m_internal->m_ui.scenario_contents_tree->mapToGlobal(point);
+            context_menu.addAction("Add Level", this, &HuxQt::add_level_action);
+            const QPoint global_pos = m_internal->m_ui.scenario_browser_tree->mapToGlobal(point);
             context_menu.exec(global_pos);
         }
     }
 
-    void HuxQt::add_level() 
+    void HuxQt::scenario_tree_item_removed(QTreeWidgetItem* item)
     {
-
+        // Recursively check child items to make sure that any opened screens are closed in the editor
+        switch (get_scenario_node_type(item))
+        {
+        case ScenarioNodeType::LEVEL:
+        case ScenarioNodeType::TERMINAL:
+        case ScenarioNodeType::SCREEN_GROUP:
+        {
+            for (int child_index = 0; child_index < item->childCount(); ++child_index)
+            {
+                scenario_tree_item_removed(item->child(child_index));
+            }
+        }
+        break;
+        case ScenarioNodeType::SCREEN:
+        {
+            if (is_screen_node_opened(item))
+            {
+                m_internal->m_screen_editor->remove_screen(item);
+            }
+        }
+        break;
+        }
     }
 
-    void HuxQt::add_terminal() 
+    void HuxQt::add_level_action()
     {
-
+        QStringList available_levels = m_core->get_scenario_manager().gather_additional_levels(m_internal->m_scenario);
+        if (!available_levels.isEmpty())
+        {
+            AddLevelDialog* add_level_dialog = new AddLevelDialog(this, available_levels);
+            add_level_dialog->open();
+        }
+        else
+        {
+            QMessageBox::warning(this, "Scenario Editor Error", "The current scenario contains no additional levels!");
+        }
     }
 
-    void HuxQt::move_terminal()
+    void HuxQt::remove_level_action()
     {
+        QTreeWidgetItem* level_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
 
+        // NOTE: deleting a level from the scenario view only simply means we won't export any updates for it. The user can opt to delete the file as well
+        if (QMessageBox::question(this, "Remove Level", QStringLiteral("Are you sure you want to remove the level \"%1\"?").arg(level_item->text(0))) == QMessageBox::StandardButton::Yes)
+        {
+            const int level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+            if (QMessageBox::question(this, "Remove Level", "Delete level script file?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
+            {
+                if (!m_core->get_scenario_manager().delete_scenario_level_script(m_internal->m_scenario, level_index))
+                {
+                    QMessageBox::warning(this, "Scenario Manager Error", QStringLiteral("Unable to remove level \"%1\"!").arg(level_item->text(0)));
+                }
+            }
+            m_core->get_scenario_manager().remove_scenario_level(m_internal->m_scenario, level_index);
+
+            // Delete the item to remove it from the tree
+            scenario_tree_item_removed(level_item);
+            delete level_item;
+        }
     }
 
-    void HuxQt::remove_terminal()
+    void HuxQt::add_terminal_action()
     {
+        QTreeWidgetItem* level_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        const int level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+        Level& selected_level = m_internal->m_scenario.get_level(level_index);
 
+        m_core->get_scenario_manager().add_level_terminal(selected_level);
+
+        // Add the new terminal to the tree
+        const Terminal& new_terminal = selected_level.get_terminals().back();
+        QTreeWidgetItem* terminal_item = new QTreeWidgetItem(level_item);
+        const QString current_terminal_name = QStringLiteral("TERMINAL %1").arg(new_terminal.get_id());
+
+        terminal_item->setText(0, current_terminal_name);
+        terminal_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_TYPE), Utils::to_integral(ScenarioNodeType::TERMINAL));
+
+        // Use the "terminal path" as its UID
+        const QString terminal_path = QStringLiteral("%1/%2").arg(selected_level.get_name(), current_terminal_name);
+        terminal_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_ID), terminal_path);
+
+        m_internal->add_terminal_tree_items(new_terminal, terminal_item);
     }
 
-    void HuxQt::add_screen()
+    void HuxQt::move_terminal_action()
     {
+        QTreeWidgetItem* terminal_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        QTreeWidgetItem* level_item = terminal_item->parent();
+        const int terminal_index = level_item->indexOfChild(terminal_item);
+        const bool move_up = QObject::sender()->property("MoveUp").toBool();
 
+        const int level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+        Level& selected_level = m_internal->m_scenario.get_level(level_index);
+        const int new_index = move_up ? (terminal_index - 1) : (terminal_index + 1);
+        m_core->get_scenario_manager().move_level_terminal(selected_level, terminal_index, new_index);
+
+        // Move the tree item
+        level_item->takeChild(terminal_index);
+        level_item->insertChild(new_index, terminal_item);
     }
 
-    void HuxQt::move_screen()
+    void HuxQt::remove_terminal_action()
     {
+        QTreeWidgetItem* terminal_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        QTreeWidgetItem* level_item = terminal_item->parent();
+        const int terminal_index = level_item->indexOfChild(terminal_item);
 
+        const int level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+        Level& selected_level = m_internal->m_scenario.get_level(level_index);
+
+        m_core->get_scenario_manager().remove_level_terminal(selected_level, terminal_index);
+
+        // Remove the terminal item from the tree
+        scenario_tree_item_removed(terminal_item);
+        delete terminal_item;
     }
 
-    void HuxQt::remove_screen()
+    void HuxQt::add_screen_action()
     {
+        QTreeWidgetItem* selected_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        QTreeWidgetItem* parent_item = selected_item->parent();
 
+        const QVariant add_above_property = QObject::sender()->property("AddAbove");
+        int new_item_index = 0;
+        bool unfinished_group = true;
+
+        QTreeWidgetItem* screen_group_item = nullptr;
+
+        int selected_level_index = -1;
+        int selected_terminal_index = -1;
+        bool unfinished = false;
+        int new_screen_index = -1;
+
+        if (add_above_property.isValid())
+        {
+            // Action called from screen item
+            const bool add_above = add_above_property.toBool();
+
+            int selected_screen_index = -1;
+            m_internal->get_screen_index_path(selected_item, selected_level_index, selected_terminal_index, unfinished, selected_screen_index);
+
+            new_screen_index = add_above ? selected_screen_index : (selected_screen_index + 1);
+
+            screen_group_item = parent_item;
+        }
+        else
+        {
+            // Action called from screen group
+            screen_group_item = selected_item;
+            new_screen_index = screen_group_item->childCount();
+
+            QTreeWidgetItem* terminal_item = screen_group_item->parent();
+            QTreeWidgetItem* level_item = terminal_item->parent();
+
+            unfinished = (terminal_item->indexOfChild(screen_group_item) == 0);
+            selected_terminal_index = level_item->indexOfChild(terminal_item);
+            selected_level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+        }
+
+        // Add the new screen in the appropriate position
+        Level& selected_level = m_internal->m_scenario.get_level(selected_level_index);
+        Terminal& selected_terminal = selected_level.get_terminal(selected_terminal_index);
+        m_core->get_scenario_manager().add_terminal_screen(selected_terminal, new_screen_index, unfinished);
+
+        Terminal::Screen& new_screen = selected_terminal.get_screen(new_screen_index, unfinished);
+
+        QTreeWidgetItem* new_screen_item = new QTreeWidgetItem(screen_group_item);
+        new_screen_item->setText(0, m_internal->get_screen_string(new_screen));
+        new_screen_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_TYPE), Utils::to_integral(ScenarioNodeType::SCREEN));
+        new_screen_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_MODIFIED), false);
+        new_screen_item->setData(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_OPENED), false);
+
+        if (screen_group_item->indexOfChild(new_screen_item) != new_screen_index)
+        {
+            screen_group_item->removeChild(new_screen_item);
+            screen_group_item->insertChild(new_screen_index, new_screen_item);
+        }
     }
 
-    void HuxQt::clear_group()
+    void HuxQt::move_screen_action()
     {
+        QTreeWidgetItem* screen_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        const bool move_up = QObject::sender()->property("MoveUp").toBool();
 
+        int selected_level_index = -1;
+        int selected_terminal_index = -1;
+        bool unfinished = false;
+        int selected_screen_index = -1;
+
+        m_internal->get_screen_index_path(screen_item, selected_level_index, selected_terminal_index, unfinished, selected_screen_index);
+        const int new_index = move_up ? (selected_screen_index - 1) : (selected_screen_index + 1);
+
+        Level& selected_level = m_internal->m_scenario.get_level(selected_level_index);
+        Terminal& selected_terminal = selected_level.get_terminal(selected_terminal_index);
+        m_core->get_scenario_manager().move_terminal_screen(selected_terminal, selected_screen_index, new_index, unfinished);
+
+        // Move the item in the tree
+        QTreeWidgetItem* screen_group_item = screen_item->parent();
+        screen_group_item->removeChild(screen_item);
+        screen_group_item->insertChild(new_index, screen_item);
+    }
+
+    void HuxQt::remove_screen_action()
+    {
+        QTreeWidgetItem* screen_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+
+        int selected_level_index = -1;
+        int selected_terminal_index = -1;
+        bool unfinished = false;
+        int selected_screen_index = -1;
+
+        m_internal->get_screen_index_path(screen_item, selected_level_index, selected_terminal_index, unfinished, selected_screen_index);
+
+        Level& selected_level = m_internal->m_scenario.get_level(selected_level_index);
+        Terminal& selected_terminal = selected_level.get_terminal(selected_terminal_index);
+        m_core->get_scenario_manager().remove_terminal_screen(selected_terminal, selected_screen_index, unfinished);
+
+        // Remove from the tree
+        scenario_tree_item_removed(screen_item);
+        delete screen_item;
+    }
+
+    void HuxQt::clear_group_action()
+    {
+        QTreeWidgetItem* group_item = m_internal->m_ui.scenario_browser_tree->selectedItems().front();
+        QTreeWidgetItem* terminal_item = group_item->parent();
+        QTreeWidgetItem* level_item = terminal_item->parent();
+
+        const bool unfinished = (terminal_item->indexOfChild(group_item) == 0);
+        const int selected_terminal_index = level_item->indexOfChild(terminal_item);
+        const int selected_level_index = m_internal->m_ui.scenario_browser_tree->indexOfTopLevelItem(level_item);
+
+        Level& selected_level = m_internal->m_scenario.get_level(selected_level_index);
+        Terminal& selected_terminal = selected_level.get_terminal(selected_terminal_index);
+        m_core->get_scenario_manager().clear_terminal_screen_group(selected_terminal, unfinished);
+
+        // Remove from the tree
+        QList<QTreeWidgetItem*> child_list = group_item->takeChildren();
+        for (QTreeWidgetItem* current_child : child_list)
+        {
+            scenario_tree_item_removed(current_child);
+            delete current_child;
+        }
     }
 
     void HuxQt::display_current_screen()
@@ -882,7 +1144,7 @@ namespace HuxApp
         reset_terminal_ui();
 
         // Go over the scenario tree and reset any relevant data/formatting
-        QTreeWidgetItemIterator scenario_tree_it(m_internal->m_ui.scenario_contents_tree);
+        QTreeWidgetItemIterator scenario_tree_it(m_internal->m_ui.scenario_browser_tree);
         while (QTreeWidgetItem* current_item = *scenario_tree_it)
         {
             const bool node_modified = current_item->data(0, Utils::to_integral(ScenarioNodeUserRoles::NODE_MODIFIED)).toBool();

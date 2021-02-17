@@ -16,6 +16,8 @@ namespace HuxApp
 
         QGraphicsView* get_graphics_view();
         
+        bool add_level(const QString& level_name, const QString& level_dir_name);
+
         bool save_terminal_info(const QString& terminal_path, const Terminal& terminal_info);
 
         void screen_edit_tab_closed(QTreeWidgetItem* screen_item);
@@ -46,16 +48,18 @@ namespace HuxApp
         void screen_node_selected(QTreeWidgetItem* item);
         void screen_node_double_clicked(QTreeWidgetItem* item);
         void scenario_tree_context_menu(const QPoint& point);
+        void scenario_tree_item_removed(QTreeWidgetItem* item);
 
         // Scenario Editor
-        void add_level();
-        void add_terminal();
-        void move_terminal();
-        void remove_terminal();
-        void add_screen();
-        void move_screen();
-        void remove_screen();
-        void clear_group();
+        void add_level_action();
+        void remove_level_action();
+        void add_terminal_action();
+        void move_terminal_action();
+        void remove_terminal_action();
+        void add_screen_action();
+        void move_screen_action();
+        void remove_screen_action();
+        void clear_group_action();
 
         // Terminal preview
         void display_current_screen();

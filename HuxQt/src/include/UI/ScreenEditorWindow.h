@@ -16,6 +16,7 @@ namespace HuxApp
 		
 		void open_screen(QTreeWidgetItem* screen_item, const Terminal::Screen& screen_data);
 		void update_screen(QTreeWidgetItem* screen_item, const QString& screen_path);
+		void close_screen(QTreeWidgetItem* screen_item);
 		void remove_screen(QTreeWidgetItem* screen_item);
 
 		bool check_unsaved();

@@ -38,6 +38,20 @@ namespace HuxApp
 
 		static QString convert_ao_to_html(const QString& ao_text);
 		static QString export_hux_formatted_text(const QString& formatted_text);
+
+		QStringList gather_additional_levels(const Scenario& scenario);
+		bool add_scenario_level(Scenario& scenario, const QString& level_dir_name);
+		bool delete_scenario_level_script(Scenario& scenario, size_t level_index);
+		void remove_scenario_level(Scenario& scenario, size_t level_index);
+
+		void add_level_terminal(Level& level);
+		void move_level_terminal(Level& level, size_t terminal_index, size_t new_index);
+		void remove_level_terminal(Level& level, size_t terminal_index);
+
+		void add_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished);
+		void move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished);
+		void remove_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished);
+		void clear_terminal_screen_group(Terminal& terminal, bool unfinished);
 	private:
 		ScenarioManager(AppCore& core);
 
