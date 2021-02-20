@@ -36,7 +36,7 @@ namespace HuxApp
 
         // Menu
         void open_scenario();
-        bool save_scenario();
+        void save_scenario_action();
         void export_scenario_scripts();
         void open_preview_config();
         void preview_config_closed();
@@ -44,6 +44,7 @@ namespace HuxApp
         // Tree functions
         void scenario_tree_clicked(QTreeWidgetItem* item, int column);
         void scenario_tree_double_clicked(QTreeWidgetItem* item, int column);
+        void terminal_node_clicked(QTreeWidgetItem* item);
         void terminal_node_double_clicked(QTreeWidgetItem* item);
         void screen_node_selected(QTreeWidgetItem* item);
         void screen_node_double_clicked(QTreeWidgetItem* item);
@@ -73,6 +74,7 @@ namespace HuxApp
         void scenario_edited();
         void clear_scenario_edited();
         bool close_current_scenario();
+        bool save_scenario();
 
         struct Internal;
         std::unique_ptr<Internal> m_internal;

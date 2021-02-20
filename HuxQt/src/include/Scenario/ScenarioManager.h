@@ -36,6 +36,8 @@ namespace HuxApp
 		bool save_scenario(const QString& path, const Scenario& scenario, bool modified_only = true);
 		bool load_scenario(const QString& path, Scenario& scenario);
 
+		QString print_level_script(const Level& level) const;
+
 		static QString convert_ao_to_html(const QString& ao_text);
 		static QString export_hux_formatted_text(const QString& formatted_text);
 
@@ -55,8 +57,8 @@ namespace HuxApp
 	private:
 		ScenarioManager(AppCore& core);
 
-		void export_level_script(QFile& level_file, const Level& level);
-		void export_terminal_script(const Terminal& terminal, QString& level_script_text);
+		void export_level_script(QFile& level_file, const Level& level) const;
+		void export_terminal_script(const Terminal& terminal, QString& level_script_text) const;
 
 		AppCore& m_core;
 

@@ -55,6 +55,8 @@ namespace HuxApp
 		bool m_modified;
 		bool m_text_dirty;
 
+		bool m_resource_browser_enabled;
+
 		Ui::ScreenEditTab m_ui;
 	};
 }

@@ -603,19 +603,14 @@ namespace HuxApp
 
 	ScenarioManager::~ScenarioManager() = default;
 
-	void ScenarioManager::export_level_script(QFile& level_file, const Level& level)
+	void ScenarioManager::export_level_script(QFile& level_file, const Level& level) const
 	{
-		QString level_script_text;
-		for (const Terminal& current_terminal : level.m_terminals)
-		{
-			export_terminal_script(current_terminal, level_script_text);
-		}
-
+		QString level_script_text = print_level_script(level);
 		QTextStream text_stream(&level_file);
 		text_stream << level_script_text;
 	}
 
-	void ScenarioManager::export_terminal_script(const Terminal& terminal, QString& level_script_text)
+	void ScenarioManager::export_terminal_script(const Terminal& terminal, QString& level_script_text) const
 	{
 		// Start with a comment tag (apparently needed for formatting?)
 		level_script_text += ";\n";
@@ -623,7 +618,7 @@ namespace HuxApp
 		// Add the terminal header
 		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), QString::number(terminal.get_id()));
 
-		if (!terminal.m_unfinished_screens.empty())
+		if (!terminal.m_unfinished_screens.empty() || (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE))
 		{
 			// Add the UNFINISHED header
 			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::UNFINISHED));
@@ -639,7 +634,7 @@ namespace HuxApp
 			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
 		}
 
-		if (!terminal.m_finished_screens.empty())
+		if (!terminal.m_finished_screens.empty() || (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE))
 		{
 			// Add the FINISHED header
 			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::FINISHED));
@@ -733,6 +728,16 @@ namespace HuxApp
 		}
 
 		return true;
+	}
+
+	QString ScenarioManager::print_level_script(const Level& level) const
+	{
+		QString level_script_text;
+		for (const Terminal& current_terminal : level.m_terminals)
+		{
+			export_terminal_script(current_terminal, level_script_text);
+		}
+		return level_script_text;
 	}
 
 	QString ScenarioManager::convert_ao_to_html(const QString& ao_text)
@@ -941,13 +946,15 @@ namespace HuxApp
 
 	void ScenarioManager::move_level_terminal(Level& level, size_t terminal_index, size_t new_index)
 	{
+		auto from_it = level.m_terminals.begin() + terminal_index;
+		auto to_it = level.m_terminals.begin() + new_index;
 		if (new_index < terminal_index)
 		{
-			std::rotate(level.m_terminals.begin() + new_index, level.m_terminals.begin() + terminal_index, level.m_terminals.begin() + terminal_index);
+			std::rotate(to_it, from_it, from_it + 1);
 		}
 		else if (new_index > terminal_index)
 		{
-			std::rotate(level.m_terminals.begin() + terminal_index, level.m_terminals.begin() + new_index, level.m_terminals.begin() + new_index);
+			std::rotate(from_it, from_it + 1, to_it + 1);
 		}
 	}
 
@@ -965,13 +972,16 @@ namespace HuxApp
 	void ScenarioManager::move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished)
 	{
 		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		auto from_it = screen_vec.begin() + screen_index;
+		auto to_it = screen_vec.begin() + new_index;
+
 		if (new_index < screen_index)
 		{
-			std::rotate(screen_vec.begin() + new_index, screen_vec.begin() + screen_index, screen_vec.begin() + screen_index);
+			std::rotate(to_it, from_it, from_it + 1);
 		}
 		else if (new_index > screen_index)
 		{
-			std::rotate(screen_vec.begin() + screen_index, screen_vec.begin() + new_index, screen_vec.begin() + new_index);
+			std::rotate(from_it, from_it + 1, to_it + 1);
 		}
 	}
 

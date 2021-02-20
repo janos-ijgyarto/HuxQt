@@ -63,6 +63,9 @@
     <QtUic Include="src\forms\AddLevelDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
+    <QtUic Include="src\forms\ExportScenarioDialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Scenario\Level.h">
@@ -118,6 +121,9 @@
     <QtMoc Include="src\include\UI\AddLevelDialog.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
+    <QtMoc Include="src\include\UI\ExportScenarioDialog.h">
+      <Filter>Header Files\UI</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\source\UI\DisplaySystem.cpp">
@@ -160,6 +166,9 @@
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="src\source\UI\AddLevelDialog.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\UI\ExportScenarioDialog.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>

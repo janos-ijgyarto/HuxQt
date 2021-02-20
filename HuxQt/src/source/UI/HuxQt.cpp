@@ -13,6 +13,7 @@
 #include "UI/AddLevelDialog.h"
 #include "UI/TerminalEditDialog.h"
 #include "UI/ScreenEditorWindow.h"
+#include "UI/ExportScenarioDialog.h"
 #include "UI/PreviewConfigWindow.h"
 
 #include "Utils/Utilities.h"
@@ -419,6 +420,8 @@ namespace HuxApp
         m_internal->get_screen_index_path(screen_item, modified_level_index, modified_terminal_index, unfinished, modified_screen_index);
 
         Level& modified_level = m_internal->m_scenario.get_level(modified_level_index);
+        modified_level.set_modified(true);
+
         Terminal& modified_terminal = modified_level.get_terminal(modified_terminal_index);
         Terminal::Screen& modified_screen = modified_terminal.get_screen(modified_screen_index, unfinished);
 
@@ -507,7 +510,7 @@ namespace HuxApp
     {
         // Menu
         connect(m_internal->m_ui.action_open_scenario, &QAction::triggered, this, &HuxQt::open_scenario);
-        connect(m_internal->m_ui.action_save_scenario, &QAction::triggered, this, &HuxQt::save_scenario);
+        connect(m_internal->m_ui.action_save_scenario, &QAction::triggered, this, &HuxQt::save_scenario_action);
         connect(m_internal->m_ui.action_export_scenario_scripts, &QAction::triggered, this, &HuxQt::export_scenario_scripts);
         connect(m_internal->m_ui.action_terminal_preview_config, &QAction::triggered, this, &HuxQt::open_preview_config);
 
@@ -556,15 +559,20 @@ namespace HuxApp
         }
     }
 
-    bool HuxQt::save_scenario()
+    void HuxQt::save_scenario_action()
     {
-        /*if (m_core->get_scenario_manager().save_scenario(m_internal->m_scenario.get_merge_folder_path(), m_internal->m_scenario))
+        // Prepare the export dialog (allows one last check to make sure the scripts we will output are correct, also helps with debugging)
+        QStringList level_output_list;
+        const ScenarioManager& scenario_manager = m_core->get_scenario_manager();
+        for (const Level& current_level : m_internal->m_scenario.get_levels())
         {
-        }*/
+            level_output_list << current_level.get_name();
+            level_output_list << scenario_manager.print_level_script(current_level);
+        }
 
-        // Clear all the UI modifications
-        clear_scenario_edited();
-        return true;
+        ExportScenarioDialog* export_dialog = new ExportScenarioDialog(this, level_output_list);
+        connect(export_dialog, &QDialog::accepted, this, &HuxQt::save_scenario);
+        export_dialog->open();
     }
 
     void HuxQt::export_scenario_scripts()
@@ -639,6 +647,12 @@ namespace HuxApp
                     child_queue.push_back(current_item->child(child_index));
                 }
             }
+
+            // Didn't find a screen, see if we can display the terminal
+            if (node_type == ScenarioNodeType::TERMINAL)
+            {
+                terminal_node_clicked(item);
+            }
         }
         }
     }
@@ -656,6 +670,12 @@ namespace HuxApp
             screen_node_double_clicked(item);
             break;
         }
+    }
+
+    void HuxQt::terminal_node_clicked(QTreeWidgetItem* item)
+    {
+        m_internal->m_selected_terminal_item = item;
+        m_internal->display_terminal_info();
     }
 
     void HuxQt::terminal_node_double_clicked(QTreeWidgetItem* item)
@@ -1199,6 +1219,18 @@ namespace HuxApp
             }
         }
 
+        return true;
+    }
+
+    bool HuxQt::save_scenario()
+    {
+        if (!m_core->get_scenario_manager().save_scenario(m_internal->m_scenario.get_merge_folder_path(), m_internal->m_scenario))
+        {
+            return false;
+        }
+
+        // Clear all the UI modifications
+        clear_scenario_edited();
         return true;
     }
 }

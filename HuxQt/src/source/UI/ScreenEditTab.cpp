@@ -68,6 +68,7 @@ namespace HuxApp
         , m_screen_data(screen_data)
         , m_modified(false)
         , m_text_dirty(false)
+        , m_resource_browser_enabled(false)
     {
         m_ui.setupUi(this);
 
@@ -196,24 +197,27 @@ namespace HuxApp
 
     void ScreenEditTab::validate_screen(Terminal::ScreenType screen_type)
     {
+        // Enable/disable specific controls based on screen type
         const bool valid_screen = (screen_type != Terminal::ScreenType::NONE) && (screen_type != Terminal::ScreenType::TAG) && (screen_type != Terminal::ScreenType::STATIC);
         enable_controls(valid_screen);
 
-        // Enable/disable specific controls based on screen type
         switch (screen_type)
         {
         case Terminal::ScreenType::INFORMATION:
             m_ui.resource_id_edit->setEnabled(false);
+            m_resource_browser_enabled = false;
             break;
         case Terminal::ScreenType::CHECKPOINT:
         case Terminal::ScreenType::TAG:
         case Terminal::ScreenType::STATIC:
             m_ui.resource_id_edit->setReadOnly(false);
             m_ui.resource_id_edit->setEnabled(true);
+            m_resource_browser_enabled = false;
             break;
         default:
             m_ui.resource_id_edit->setEnabled(true && valid_screen);
             m_ui.resource_id_edit->setReadOnly(true); // Only allow direct editing when working on a CHECKPOINT screen
+            m_resource_browser_enabled = true && valid_screen;
             break;
         }
     }
@@ -231,7 +235,7 @@ namespace HuxApp
     void ScreenEditTab::screen_resource_clicked()
     {
         const Terminal::ScreenType current_screen_type = static_cast<Terminal::ScreenType>(m_ui.screen_type_combo->currentIndex());
-        if (m_ui.resource_id_edit->isEnabled() && (current_screen_type != Terminal::ScreenType::CHECKPOINT))
+        if (m_ui.resource_id_edit->isEnabled() && m_resource_browser_enabled)
         {
             BrowsePictDialog* pict_dialog = new BrowsePictDialog(m_core, this);
             connect(pict_dialog, &BrowsePictDialog::pict_selected, this, &ScreenEditTab::pict_selected);
