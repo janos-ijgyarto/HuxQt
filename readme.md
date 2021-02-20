@@ -1,7 +1,9 @@
 # Hux
-Hux is a WYSIAWYG ("What You See Is (Almost) What You Get") terminal script editor for [Aleph One](https://alephone.lhowon.org/). The GUI allows users to create, edit, and preview terminals in any AO-compatible scenario, with controls provided for image and text alignment, formatting, etc. 
+Hux is a WYSIAWYG ("What You See Is (Almost) What You Get") terminal script editor for [Aleph One](https://alephone.lhowon.org/), developed using [Qt](https://www.qt.io/). The GUI allows users to create, edit, and preview terminals in any AO-compatible scenario, with controls provided for image and text alignment, formatting, etc. 
 
 All necessary operations can be done through the tool, minimizing the risk of errors caused by incorrect syntax, and reducing the time cost of creating/editing terminals.
+
+The app was developed using Qt version 5.12.9, but it should be compatible with newer versions.
 
 _NOTE: Hux provides a close, but not 1:1 representation of Aleph One's terminal rendering. All scripting content is preserved, but there can be small differences in the displayed result (e.g line wrapping)_
 
