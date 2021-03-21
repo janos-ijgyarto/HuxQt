@@ -285,7 +285,7 @@ namespace HuxApp
 				view.m_text_item->setVisible(true);
 			}
 		}
-			break;
+		break;
 		case Terminal::ScreenType::TAG:
 		case Terminal::ScreenType::STATIC:
 			view.m_text_item->setVisible(false);
@@ -299,18 +299,32 @@ namespace HuxApp
 		view.m_display_data.m_text = data.m_text;
 		view.m_text_item->setHtml(view.m_display_data.m_text);
 
+		// Set alignment
+		QTextOption textOption = view.m_text_item->document()->defaultTextOption();
+		switch (data.m_screen_type)
+		{
+		case Terminal::ScreenType::LOGON:
+		case Terminal::ScreenType::LOGOFF:
+			textOption.setAlignment(Qt::AlignCenter);
+			break;
+		default:
+			textOption.setAlignment(Qt::AlignLeft);
+			break;
+		}
+		view.m_text_item->document()->setDefaultTextOption(textOption);
+
 		// Reposition according to type
 		switch (data.m_screen_type)
 		{
 		case Terminal::ScreenType::LOGON:
 		case Terminal::ScreenType::LOGOFF:
 		{
-			// Set center, below image
-			view.m_text_item->adjustSize();
-			const QRectF text_rect = view.m_text_item->boundingRect();
-			const QRectF image_rect = view.m_image_item->boundingRect();
-			view.m_text_item->setPos((TERMINAL_WIDTH - text_rect.width()) * 0.5, (TERMINAL_HEIGHT + image_rect.height()) * 0.5);
+			// Use maximum available width (text will be centered horizontally)
 			view.m_text_item->setTextWidth(TERMINAL_WIDTH - (2 * m_internal->m_display_config.m_horizontalMargin));
+
+			// Set center, below image
+			const QRectF image_rect = view.m_image_item->boundingRect();
+			view.m_text_item->setPos(m_internal->m_display_config.m_horizontalMargin, (TERMINAL_HEIGHT + image_rect.height()) * 0.5);
 		}
 			break;
 		case Terminal::ScreenType::INFORMATION:
