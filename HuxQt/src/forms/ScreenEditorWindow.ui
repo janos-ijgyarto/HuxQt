@@ -35,6 +35,9 @@
          <property name="tabsClosable">
           <bool>true</bool>
          </property>
+         <property name="movable">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="0" column="0">
@@ -53,8 +56,15 @@
       </layout>
      </widget>
      <widget class="QWidget" name="gridLayoutWidget">
-      <layout class="QGridLayout" name="screen_preview_grid">
-       <item row="0" column="1">
+      <layout class="QGridLayout" name="screen_preview_grid" columnstretch="1,1,2">
+       <item row="0" column="0">
+        <widget class="QLabel" name="screen_preview_label">
+         <property name="text">
+          <string>Screen preview:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
         <widget class="QProgressBar" name="screen_update_progress_bar">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -67,15 +77,15 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="screen_preview_label">
+       <item row="1" column="0" colspan="3">
+        <widget class="QGraphicsView" name="screen_preview"/>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="screen_page_label">
          <property name="text">
-          <string>Screen preview:</string>
+          <string/>
          </property>
         </widget>
-       </item>
-       <item row="1" column="0" colspan="2">
-        <widget class="QGraphicsView" name="screen_preview"/>
        </item>
       </layout>
      </widget>

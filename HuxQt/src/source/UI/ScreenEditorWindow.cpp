@@ -249,7 +249,18 @@ namespace HuxApp
 				display_data.m_screen_type = current_screen_data.m_type;
 				display_data.m_alignment = current_screen_data.m_alignment;
 
-				m_core.get_display_system().update_display(DisplaySystem::View::SCREEN_EDITOR, display_data);
+				const int line_count = m_core.get_display_system().update_display(DisplaySystem::View::SCREEN_EDITOR, display_data);
+				const int page_count = DisplaySystem::get_page_count(line_count);
+				if (page_count > 1)
+				{
+					// Line count will exceed a single page, display how many pages it spans
+					m_internal->m_ui.screen_page_label->setText(QStringLiteral("Page count: %1").arg(page_count));
+				}
+				else
+				{
+					// Line count within bounds, clear the label
+					m_internal->m_ui.screen_page_label->clear();
+				}
 			}
 		}
 	}

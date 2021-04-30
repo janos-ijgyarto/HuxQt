@@ -12,6 +12,8 @@ namespace HuxApp
 {
 	namespace
 	{
+		constexpr const char* TERMINAL_SCRIPT_CODEC = "UTF-8";
+
 		enum class ScriptKeywords
 		{
 			TERMINAL,
@@ -278,7 +280,7 @@ namespace HuxApp
 			if (level_file.open(QIODevice::ReadOnly))
 			{
 				m_file_stream.setDevice(&level_file);
-				m_file_stream.setCodec("UTF-8");
+				m_file_stream.setCodec(TERMINAL_SCRIPT_CODEC);
 				while (!m_file_stream.atEnd())
 				{
 					switch (m_state)
@@ -607,6 +609,7 @@ namespace HuxApp
 	{
 		QString level_script_text = print_level_script(level);
 		QTextStream text_stream(&level_file);
+		text_stream.setCodec(TERMINAL_SCRIPT_CODEC);
 		text_stream << level_script_text;
 	}
 

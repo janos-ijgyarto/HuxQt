@@ -15,6 +15,9 @@ namespace HuxApp
 		constexpr qreal TERMINAL_HEIGHT = 320.0;
 		constexpr qreal TERMINAL_BORDER_HEIGHT = 18;
 
+		// Value taken from the game
+		constexpr int SCREEN_MAX_LINES = 22;
+
 		// Text rendering constants
 		// NOTE: these values are just about good enough to create WYSIWYG between the tool and Aleph One (some of the word wrapping won't be 100% there)
 		// The preview config window can be used for further tweaking
@@ -42,6 +45,19 @@ namespace HuxApp
 		};
 
 		QColor get_display_color(DisplayColors color) { return DISPLAY_COLOR_ARRAY[Utils::to_integral(color)]; }
+
+		int get_text_document_line_count(const QTextDocument* text_document)
+		{
+			text_document->documentLayout();
+
+			int line_count = 0;
+			for (int current_block = 0; current_block < text_document->blockCount(); ++current_block)
+			{
+				line_count += text_document->findBlockByNumber(current_block).layout()->lineCount();
+			}
+
+			return line_count;
+		}
 	}
 
 	struct DisplaySystem::ViewData
@@ -179,27 +195,33 @@ namespace HuxApp
 		}
 	}
 
-	void DisplaySystem::update_display(View view, const DisplayData& data)
+	int DisplaySystem::update_display(View view, const DisplayData& data)
 	{
 		ViewData& selected_view = m_internal->m_view_data[Utils::to_integral(view)];
-		if (data == selected_view.m_display_data)
+		if (data != selected_view.m_display_data)
 		{
-			return;
+			// Update the display contents
+			update_image(selected_view, data);
+			update_text(selected_view, data);
+
+			// Update the screen type
+			selected_view.m_display_data.m_screen_type = data.m_screen_type;
 		}
 
-		// Update the display contents
-		update_image(selected_view, data);
-		update_text(selected_view, data);
-
-		// Update the screen type
-		selected_view.m_display_data.m_screen_type = data.m_screen_type;
+		// Return how many lines the current text contains
+		return get_text_document_line_count(selected_view.m_text_item->document());
 	}
 
 	const DisplaySystem::DisplayConfig& DisplaySystem::get_display_config() const { return m_internal->m_display_config; }
 
 	void DisplaySystem::set_display_config(const DisplayConfig& config) { m_internal->apply_display_config(config); }
 
-	const QMap<int, QString>& HuxApp::DisplaySystem::get_pict_cache() const { return m_internal->m_pict_path_cache; }
+	const QMap<int, QString>& DisplaySystem::get_pict_cache() const { return m_internal->m_pict_path_cache; }
+
+	int DisplaySystem::get_page_count(int line_count)
+	{
+		return ceil(double(line_count) / double(SCREEN_MAX_LINES));
+	}
 
 	DisplaySystem::DisplaySystem(AppCore& core)
 		: m_internal(std::make_unique<Internal>())

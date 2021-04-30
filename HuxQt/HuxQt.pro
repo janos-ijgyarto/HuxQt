@@ -7,6 +7,7 @@ TARGET = HuxQt
 DESTDIR = ../x64/Debug
 CONFIG += debug
 LIBS += -L"."
+PRECOMPILED_HEADER = stdafx.h
 DEPENDPATH += .
 MOC_DIR += .
 OBJECTS_DIR += debug

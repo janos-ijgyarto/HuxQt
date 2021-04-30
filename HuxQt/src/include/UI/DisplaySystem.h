@@ -29,13 +29,14 @@ namespace HuxApp
 
 		void set_graphics_view(View view, QGraphicsView* graphics_view);
 		void update_resources(const QString& resource_path);
-		void update_display(View view, const DisplayData& data);
-		void clear_display(View view);
+		int update_display(View view, const DisplayData& data);
 
 		const DisplayConfig& get_display_config() const;
 		void set_display_config(const DisplayConfig& config);
 
 		const QMap<int, QString>& get_pict_cache() const;
+
+		static int get_page_count(int line_count);
 	private:
 		struct ViewData;
 
