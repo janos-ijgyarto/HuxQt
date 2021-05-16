@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>997</width>
-    <height>776</height>
+    <width>1024</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
    </size>
   </property>
   <widget class="QWidget" name="main_vbox">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <widget class="QSplitter" name="main_splitter">
       <property name="orientation">
@@ -44,13 +44,6 @@
            </column>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="scenario_name_label">
-           <property name="text">
-            <string>N/A</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0">
           <widget class="QLabel" name="scenario_browser_label">
            <property name="sizePolicy">
@@ -64,12 +57,135 @@
            </property>
           </widget>
          </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="scenario_name_label">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="scenario_browser_buttons_hbox">
+           <item>
+            <widget class="QPushButton" name="add_terminal_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Add New Terminal</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="move_terminal_up_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Move Terminal Up</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="move_terminal_down_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Move Terminal Down</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="remove_terminal_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Remove Terminal</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="gridLayoutWidget_2">
-        <layout class="QGridLayout" name="terminal_info_grid">
+       <widget class="QWidget" name="verticalLayoutWidget_2">
+        <layout class="QVBoxLayout" name="screen_browser_vbox">
+         <item>
+          <widget class="QLabel" name="screen_browser_label">
+           <property name="text">
+            <string>Screen Browser:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="screen_browser_tree">
+           <attribute name="headerVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string notr="true">1</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QSplitter" name="terminal_preview_splitter">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <layout class="QGridLayout" name="terminal_contents_grid">
+         <item row="0" column="0">
+          <widget class="QLabel" name="terminal_contents_label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Terminal contents:</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0" colspan="2">
           <widget class="QTableWidget" name="terminal_info_table">
+           <attribute name="horizontalHeaderVisible">
+            <bool>false</bool>
+           </attribute>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QTableWidget" name="screen_info_table">
            <attribute name="horizontalHeaderVisible">
             <bool>false</bool>
            </attribute>
@@ -82,77 +198,97 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0" colspan="2">
+         <item row="0" column="2">
           <widget class="QLabel" name="screen_info_label">
            <property name="text">
-            <string>Screen info:</string>
+            <string>Current screen info:</string>
            </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="terminal_info_label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Terminal info:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0" colspan="2">
-          <widget class="QTableWidget" name="screen_info_table">
-           <attribute name="horizontalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
           </widget>
          </item>
         </layout>
        </widget>
-      </widget>
-      <widget class="QWidget" name="gridLayoutWidget_4">
-       <layout class="QGridLayout" name="terminal_preview_grid">
-        <item row="2" column="3">
-         <widget class="QPushButton" name="terminal_last_button">
-          <property name="text">
-           <string>&gt;&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="terminal_prev_button">
-          <property name="text">
-           <string>&lt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="2">
-         <widget class="QPushButton" name="terminal_next_button">
-          <property name="text">
-           <string>&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QPushButton" name="terminal_first_button">
-          <property name="text">
-           <string>&lt;&lt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="4">
-         <widget class="QGraphicsView" name="terminal_preview"/>
-        </item>
-        <item row="0" column="0" colspan="4">
-         <widget class="QLabel" name="terminal_preview_label">
-          <property name="text">
-           <string>Terminal preview:</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QWidget" name="gridLayoutWidget_4">
+        <layout class="QVBoxLayout" name="terminal_preview_vbox">
+         <item>
+          <widget class="QLabel" name="terminal_preview_label">
+           <property name="text">
+            <string>Terminal preview:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGraphicsView" name="terminal_preview"/>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="terminal_preview_button_hbox">
+           <item>
+            <widget class="QPushButton" name="terminal_first_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>First Screen</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminal_prev_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Previous Screen</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminal_next_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Next Screen</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminal_last_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Last Screen</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -163,7 +299,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>997</width>
+     <width>1024</width>
      <height>21</height>
     </rect>
    </property>

@@ -383,13 +383,13 @@ namespace HuxApp
 			}
 		}
 
-		void validate_end_terminal(Terminal& terminal)
+		void validate_end_terminal(const Terminal& terminal, int terminal_id)
 		{
 			// Validate that the ID matches the one we were parsing
 			QStringList terminal_header_strings = m_current_line.split(' ');
 			const int end_id = terminal_header_strings.at(1).toInt();
 
-			if (end_id == terminal.m_id)
+			if (end_id == terminal_id)
 			{
 				// We are done with this terminal
 				m_state = ParserState::NONE;
@@ -412,7 +412,7 @@ namespace HuxApp
 
 			// Start with the first received line (has the terminal ID)
 			QStringList terminal_header_strings = m_current_line.split(' ');
-			new_terminal.m_id = terminal_header_strings.at(1).toInt();
+			const int terminal_id = terminal_header_strings.at(1).toInt();
 
 			// Parse the terminal
 			while (!m_file_stream.atEnd())
@@ -434,14 +434,14 @@ namespace HuxApp
 						}
 						else if (m_current_line_type == ScriptKeywords::END_TERMINAL)
 						{
-							validate_end_terminal(new_terminal);
+							validate_end_terminal(new_terminal, terminal_id);
 							return;
 						}
 					}
 						break;
 					case ScriptKeywords::END_TERMINAL:
 					{
-						validate_end_terminal(new_terminal);
+						validate_end_terminal(new_terminal, terminal_id);
 						return;
 					}
 					default:
@@ -613,13 +613,14 @@ namespace HuxApp
 		text_stream << level_script_text;
 	}
 
-	void ScenarioManager::export_terminal_script(const Terminal& terminal, QString& level_script_text) const
+	void ScenarioManager::export_terminal_script(const Terminal& terminal, int terminal_index, QString& level_script_text) const
 	{
 		// Start with a comment tag (apparently needed for formatting?)
 		level_script_text += ";\n";
 		
 		// Add the terminal header
-		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), QString::number(terminal.get_id()));
+		const QString terminal_id_string = QString::number(terminal_index);
+		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), terminal_id_string);
 
 		if (!terminal.m_unfinished_screens.empty() || (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE))
 		{
@@ -654,7 +655,7 @@ namespace HuxApp
 		}
 
 		// Add the terminal end header
-		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), QString::number(terminal.get_id())); 
+		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
 	}
 
 	bool ScenarioManager::save_scenario(const QString& path, const Scenario& scenario, bool modified_only)
@@ -697,6 +698,7 @@ namespace HuxApp
 		QStringList level_dir_list;
 		if (!validate_scenario_folder(path, level_dir_list))
 		{
+			QMessageBox::warning(m_core.get_main_window(), "Scenario Load Error", "The selected folder does not contain a valid Aleph One scenario!");
 			return false;
 		}
 
@@ -736,9 +738,11 @@ namespace HuxApp
 	QString ScenarioManager::print_level_script(const Level& level) const
 	{
 		QString level_script_text;
+		int terminal_index = 0;
 		for (const Terminal& current_terminal : level.m_terminals)
 		{
-			export_terminal_script(current_terminal, level_script_text);
+			export_terminal_script(current_terminal, terminal_index, level_script_text);
+			++terminal_index;
 		}
 		return level_script_text;
 	}
@@ -931,20 +935,17 @@ namespace HuxApp
 		scenario.m_levels.erase(scenario.m_levels.begin() + level_index);
 	}
 
-	void ScenarioManager::add_level_terminal(Level& level)
+	void ScenarioManager::add_level_terminal(Level& level) 
 	{
-		int new_terminal_id = level.m_terminals.empty() ? 0 : INT_MIN;
-		for (const Terminal& current_terminal : level.m_terminals)
-		{
-			if (current_terminal.m_id >= new_terminal_id)
-			{
-				new_terminal_id = current_terminal.m_id + 1;
-			}
-		}
+		level.m_terminals.emplace_back(); 
+		level.set_modified(true);
+	}
 
-		level.m_terminals.emplace_back();
-		Terminal& new_terminal = level.m_terminals.back();
-		new_terminal.m_id = new_terminal_id;
+	void ScenarioManager::add_level_terminal(Level& level, const Terminal& terminal, size_t index)
+	{
+		const size_t terminal_index = std::clamp(index, size_t(0), level.m_terminals.size());
+		level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminal);
+		level.set_modified(true);
 	}
 
 	void ScenarioManager::move_level_terminal(Level& level, size_t terminal_index, size_t new_index)
@@ -959,6 +960,7 @@ namespace HuxApp
 		{
 			std::rotate(from_it, from_it + 1, to_it + 1);
 		}
+		level.set_modified(true);
 	}
 
 	void ScenarioManager::remove_level_terminal(Level& level, size_t terminal_index)
@@ -966,9 +968,10 @@ namespace HuxApp
 		level.m_terminals.erase(level.m_terminals.begin() + terminal_index);
 	}
 
-	void ScenarioManager::add_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished)
+	void ScenarioManager::add_terminal_screen(Terminal& terminal, size_t index, bool unfinished)
 	{
 		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
+		const size_t screen_index = std::clamp(index, size_t(0), screen_vec.size());
 		screen_vec.emplace(screen_vec.begin() + screen_index);
 	}
 

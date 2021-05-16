@@ -52,9 +52,6 @@ namespace HuxApp
 			void reset();
 		};
 
-		int get_id() const { return m_id; }
-		void set_id(int id) { m_id = id; }
-
 		Screen& get_screen(int index, bool unfinished) { return (unfinished ? m_unfinished_screens[index] : m_finished_screens[index]); }
 		std::vector<Screen>& get_screens(bool unfinished) { return (unfinished ? m_unfinished_screens : m_finished_screens); }
 		Teleport& get_teleport_info(bool unfinished) { return (unfinished ? m_unfinished_teleport : m_finished_teleport); }
@@ -64,9 +61,9 @@ namespace HuxApp
 		const Teleport& get_teleport_info(bool unfinished) const { return (unfinished ? m_unfinished_teleport : m_finished_teleport); }
 
 		const QString& get_comments() const { return m_comments; }
-	private:
-		int m_id;
 
+		static QString get_screen_string(const Screen& screen_data);
+	private:
 		std::vector<Screen> m_unfinished_screens;
 		Teleport m_unfinished_teleport;
 

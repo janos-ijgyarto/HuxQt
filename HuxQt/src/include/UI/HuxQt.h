@@ -17,22 +17,13 @@ namespace HuxApp
         QGraphicsView* get_graphics_view();
         
         bool add_level(const QString& level_name, const QString& level_dir_name);
-
-        bool save_terminal_info(const QString& terminal_path, const Terminal& terminal_info);
-
-        void screen_edit_tab_closed(QTreeWidgetItem* screen_item);
-        void save_screen(QTreeWidgetItem* screen_item, const Terminal::Screen& screen_data);
-
-        QString get_screen_path(QTreeWidgetItem* screen_item);
     protected:
         void closeEvent(QCloseEvent* event);
     private:
         void init_ui();
         void connect_signals();
-
+        void clear_preview_display();
         void reset_ui();
-        void reset_scenario_ui();
-        void reset_terminal_ui();
 
         // Menu
         void open_scenario();
@@ -42,25 +33,22 @@ namespace HuxApp
         void preview_config_closed();
 
         // Tree functions
-        void scenario_tree_clicked(QTreeWidgetItem* item, int column);
-        void scenario_tree_double_clicked(QTreeWidgetItem* item, int column);
-        void terminal_node_clicked(QTreeWidgetItem* item);
-        void terminal_node_double_clicked(QTreeWidgetItem* item);
-        void screen_node_selected(QTreeWidgetItem* item);
-        void screen_node_double_clicked(QTreeWidgetItem* item);
+        void scenario_item_selected(QTreeWidgetItem* current, QTreeWidgetItem* previous);
+        void scenario_item_double_clicked(QTreeWidgetItem* item, int column);
         void scenario_tree_context_menu(const QPoint& point);
-        void scenario_tree_item_removed(QTreeWidgetItem* item);
+        void screen_item_selected(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
         // Scenario Editor
         void add_level_action();
         void remove_level_action();
-        void add_terminal_action();
-        void move_terminal_action();
-        void remove_terminal_action();
-        void add_screen_action();
-        void move_screen_action();
-        void remove_screen_action();
-        void clear_group_action();
+
+        void copy_terminal_action();
+        void paste_terminal_action();
+
+        void add_terminal_clicked();
+        void move_terminal_up_clicked();
+        void move_terminal_down_clicked();
+        void remove_terminal_clicked();
 
         // Terminal preview
         void display_current_screen();
@@ -68,11 +56,9 @@ namespace HuxApp
         void terminal_prev_clicked();
         void terminal_next_clicked();
         void terminal_last_clicked();
-        void update_navigation_buttons(int current_index, int screen_count);
 
         // Misc.
-        void scenario_edited();
-        void clear_scenario_edited();
+        void terminal_editor_closed();
         bool close_current_scenario();
         bool save_scenario();
 

@@ -77,32 +77,6 @@ namespace HuxApp
 			// Set the configurations for each scene
 			m_font.setPointSize(1);
 
-			for (int scene_data_index = 0; scene_data_index < Utils::to_integral(DisplaySystem::View::VIEW_COUNT); ++scene_data_index)
-			{
-				ViewData& current_view_data = m_view_data[scene_data_index];
-
-				current_view_data.m_scene.setSceneRect(QRectF(0, 0, TERMINAL_WIDTH, TERMINAL_HEIGHT));
-				current_view_data.m_scene.setBackgroundBrush(QBrush(get_display_color(DisplayColors::BACKGROUND)));
-
-				// Add top and bottom rectangles
-				QGraphicsRectItem* border_rect = current_view_data.m_scene.addRect(0, 0, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
-				border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
-				border_rect->setZValue(3);
-
-				border_rect = current_view_data.m_scene.addRect(0, TERMINAL_HEIGHT - TERMINAL_BORDER_HEIGHT, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
-				border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
-				border_rect->setZValue(3);
-
-				// Set the text item
-				current_view_data.m_text_item = current_view_data.m_scene.addText("");
-				current_view_data.m_text_item->setDefaultTextColor(get_display_color(DisplayColors::TEXT));
-				current_view_data.m_text_item->setZValue(2);
-
-				// Set the image item
-				current_view_data.m_image_item = current_view_data.m_scene.addPixmap(QPixmap());
-				current_view_data.m_image_item->setZValue(1);
-			}
-
 			// Set the default config
 			m_display_config.m_lineSpacing = DEFAULT_LINE_SPACING;
 			m_display_config.m_wordSpacing = DEFAULT_WORD_SPACING;
@@ -111,6 +85,33 @@ namespace HuxApp
 			m_display_config.m_verticalMargin = DEFAULT_VERTICAL_MARGIN;
 
 			update_config();
+		}
+
+		void init_view(ViewData& view_data)
+		{
+			view_data.m_scene.setSceneRect(QRectF(0, 0, TERMINAL_WIDTH, TERMINAL_HEIGHT));
+			view_data.m_scene.setBackgroundBrush(QBrush(get_display_color(DisplayColors::BACKGROUND)));
+
+			// Add top and bottom rectangles
+			QGraphicsRectItem* border_rect = view_data.m_scene.addRect(0, 0, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
+			border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
+			border_rect->setZValue(3);
+
+			border_rect = view_data.m_scene.addRect(0, TERMINAL_HEIGHT - TERMINAL_BORDER_HEIGHT, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
+			border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
+			border_rect->setZValue(3);
+
+			// Set the text item
+			view_data.m_text_item = view_data.m_scene.addText("");
+			view_data.m_text_item->setDefaultTextColor(get_display_color(DisplayColors::TEXT));
+			view_data.m_text_item->setZValue(2);
+
+			// Set the text font
+			view_data.m_text_item->setFont(m_font);
+
+			// Set the image item
+			view_data.m_image_item = view_data.m_scene.addPixmap(QPixmap());
+			view_data.m_image_item->setZValue(1);
 		}
 
 		QPixmap get_pict(int pict_id) const
@@ -135,9 +136,9 @@ namespace HuxApp
 			m_font.setWordSpacing(m_display_config.m_wordSpacing);
 			m_font.setLetterSpacing(QFont::AbsoluteSpacing, m_display_config.m_letterSpacing);
 
-			for (int scene_data_index = 0; scene_data_index < Utils::to_integral(DisplaySystem::View::VIEW_COUNT); ++scene_data_index)
+			for (auto& current_view_pair : m_view_data_lookup)
 			{
-				m_view_data[scene_data_index].m_text_item->setFont(m_font);
+				current_view_pair.second.m_text_item->setFont(m_font);
 			}
 		}
 
@@ -145,7 +146,9 @@ namespace HuxApp
 		QMap<int, QString> m_pict_path_cache;
 		
 		// Store data per-view
-		ViewData m_view_data[Utils::to_integral(DisplaySystem::View::VIEW_COUNT)];
+		std::unordered_map<int, ViewData> m_view_data_lookup;
+		std::vector<int> m_view_data_free_list;
+		int m_view_id_counter = 0;
 
 		// Cache for display configuration data (font, spacing, etc.)
 		QFont m_font;
@@ -154,11 +157,43 @@ namespace HuxApp
 
 	DisplaySystem::~DisplaySystem() = default;
 
-	void DisplaySystem::set_graphics_view(View view, QGraphicsView* graphics_view)
+	DisplaySystem::ViewID DisplaySystem::register_graphics_view(QGraphicsView* graphics_view)
 	{
-		ViewData& selected_view = m_internal->m_view_data[Utils::to_integral(view)];
-		graphics_view->setScene(&selected_view.m_scene);
+		// Check if we can reuse an entry from the free list
+		ViewID new_view_id;
+		const bool is_free_list_empty = m_internal->m_view_data_free_list.empty();
+		new_view_id.m_id = is_free_list_empty ? (m_internal->m_view_id_counter++) : m_internal->m_view_data_free_list.back();
+
+		ViewData& new_view_data = m_internal->m_view_data_lookup[new_view_id.m_id];
+		if (!is_free_list_empty)
+		{
+			m_internal->m_view_data_free_list.pop_back();
+		}
+		else
+		{
+			// We created a new view, initialize it
+			m_internal->init_view(new_view_data);
+		}
+
+		graphics_view->setScene(&new_view_data.m_scene);
 		graphics_view->show();
+
+		return new_view_id;
+	}
+
+	void DisplaySystem::release_graphics_view(const ViewID& view_id, QGraphicsView* graphics_view)
+	{
+		assert(view_id.is_valid());
+		auto view_it = m_internal->m_view_data_lookup.find(view_id.get_id());
+		assert(view_it != m_internal->m_view_data_lookup.end());
+
+		// Make sure we didn't try to release more than once
+		assert(std::find(m_internal->m_view_data_free_list.begin(), m_internal->m_view_data_free_list.end(), view_id.get_id()) == m_internal->m_view_data_free_list.end());
+		m_internal->m_view_data_free_list.push_back(view_id.get_id());
+
+		graphics_view->setScene(nullptr);
+
+		clear_display(view_id);
 	}
 
 	void DisplaySystem::update_resources(const QString& resource_path)
@@ -166,9 +201,9 @@ namespace HuxApp
 		// Clear the pict cache
 		m_internal->m_pict_path_cache.clear();
 
-		for (int scene_data_index = 0; scene_data_index < Utils::to_integral(DisplaySystem::View::VIEW_COUNT); ++scene_data_index)
+		for (auto& current_view_pair : m_internal->m_view_data_lookup)
 		{
-			ViewData& current_view_data = m_internal->m_view_data[scene_data_index];
+			ViewData& current_view_data = current_view_pair.second;
 
 			current_view_data.m_display_data = DisplayData();
 			current_view_data.m_text_item->setPlainText("");
@@ -195,9 +230,12 @@ namespace HuxApp
 		}
 	}
 
-	int DisplaySystem::update_display(View view, const DisplayData& data)
+	int DisplaySystem::update_display(const ViewID& view_id, const DisplayData& data)
 	{
-		ViewData& selected_view = m_internal->m_view_data[Utils::to_integral(view)];
+		auto view_it = m_internal->m_view_data_lookup.find(view_id.get_id());
+		assert(view_it != m_internal->m_view_data_lookup.end());
+		ViewData& selected_view = view_it->second;
+
 		if (data != selected_view.m_display_data)
 		{
 			// Update the display contents
@@ -210,6 +248,17 @@ namespace HuxApp
 
 		// Return how many lines the current text contains
 		return get_text_document_line_count(selected_view.m_text_item->document());
+	}
+
+	void DisplaySystem::clear_display(const ViewID& view_id)
+	{
+		auto view_it = m_internal->m_view_data_lookup.find(view_id.get_id());
+		assert(view_it != m_internal->m_view_data_lookup.end());
+		
+		// Hide the contents
+		ViewData& selected_view = view_it->second;
+		selected_view.m_image_item->setVisible(false);
+		selected_view.m_text_item->setVisible(false);
 	}
 
 	const DisplaySystem::DisplayConfig& DisplaySystem::get_display_config() const { return m_internal->m_display_config; }

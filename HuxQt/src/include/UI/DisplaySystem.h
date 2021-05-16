@@ -9,11 +9,15 @@ namespace HuxApp
 	class DisplaySystem
 	{
 	public:
-		enum class View
+		class ViewID
 		{
-			MAIN_WINDOW,
-			SCREEN_EDITOR,
-			VIEW_COUNT
+		public:
+			int get_id() const { return m_id; }
+			void invalidate() { m_id = -1; }
+			bool is_valid() const { return (m_id != -1); }
+		private:
+			int m_id = -1;
+			friend DisplaySystem;
 		};
 
 		struct DisplayConfig
@@ -27,9 +31,12 @@ namespace HuxApp
 
 		~DisplaySystem();
 
-		void set_graphics_view(View view, QGraphicsView* graphics_view);
+		ViewID register_graphics_view(QGraphicsView* graphics_view);
+		void release_graphics_view(const ViewID& view_id, QGraphicsView* graphics_view);
+
 		void update_resources(const QString& resource_path);
-		int update_display(View view, const DisplayData& data);
+		int update_display(const ViewID& view_id, const DisplayData& data);
+		void clear_display(const ViewID& view_id);
 
 		const DisplayConfig& get_display_config() const;
 		void set_display_config(const DisplayConfig& config);

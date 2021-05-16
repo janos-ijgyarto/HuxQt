@@ -50,12 +50,14 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
@@ -114,8 +116,7 @@
     <QtUic Include="src\forms\HuxQt.ui" />
     <QtUic Include="src\forms\PreviewConfigWindow.ui" />
     <QtUic Include="src\forms\ScreenEditTab.ui" />
-    <QtUic Include="src\forms\TerminalEditDialog.ui" />
-    <QtUic Include="src\forms\ScreenEditorWindow.ui" />
+    <QtUic Include="src\forms\TerminalEditorWindow.ui" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\AppCore.h" />
@@ -131,9 +132,8 @@
     <ClInclude Include="src\include\UI\DisplaySystem.h" />
     <QtMoc Include="src\include\UI\PreviewConfigWindow.h" />
     <QtMoc Include="src\include\UI\ScreenEditTab.h" />
-    <QtMoc Include="src\include\UI\TerminalEditDialog.h" />
-    <QtMoc Include="src\include\UI\ScreenEditorWindow.h" />
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h" />
+    <QtMoc Include="src\include\UI\TerminalEditorWindow.h" />
     <ClInclude Include="src\include\Utils\Utilities.h" />
     <QtMoc Include="src\include\UI\HuxQt.h" />
   </ItemGroup>
@@ -154,8 +154,7 @@
     <ClCompile Include="src\source\UI\HuxQt.cpp" />
     <ClCompile Include="src\source\UI\PreviewConfigWindow.cpp" />
     <ClCompile Include="src\source\UI\ScreenEditTab.cpp" />
-    <ClCompile Include="src\source\UI\TerminalEditDialog.cpp" />
-    <ClCompile Include="src\source\UI\ScreenEditorWindow.cpp" />
+    <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="src\resources\fat_hux.ico" />

@@ -54,16 +54,13 @@
     <QtUic Include="src\forms\ScreenEditTab.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="src\forms\TerminalEditDialog.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
-    <QtUic Include="src\forms\ScreenEditorWindow.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
     <QtUic Include="src\forms\AddLevelDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="src\forms\ExportScenarioDialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="src\forms\TerminalEditorWindow.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
@@ -112,16 +109,13 @@
     <QtMoc Include="src\include\UI\ScreenEditTab.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
-    <QtMoc Include="src\include\UI\TerminalEditDialog.h">
-      <Filter>Header Files\UI</Filter>
-    </QtMoc>
-    <QtMoc Include="src\include\UI\ScreenEditorWindow.h">
-      <Filter>Header Files\UI</Filter>
-    </QtMoc>
     <QtMoc Include="src\include\UI\AddLevelDialog.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h">
+      <Filter>Header Files\UI</Filter>
+    </QtMoc>
+    <QtMoc Include="src\include\UI\TerminalEditorWindow.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
   </ItemGroup>
@@ -159,16 +153,13 @@
     <ClCompile Include="src\source\UI\ScreenEditTab.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
-    <ClCompile Include="src\source\UI\TerminalEditDialog.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="src\source\UI\ScreenEditorWindow.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
     <ClCompile Include="src\source\UI\AddLevelDialog.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="src\source\UI\ExportScenarioDialog.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
