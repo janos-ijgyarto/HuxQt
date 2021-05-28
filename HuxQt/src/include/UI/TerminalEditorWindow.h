@@ -10,17 +10,17 @@ namespace HuxApp
 	{
 		Q_OBJECT
 	public:
-		TerminalEditorWindow(AppCore& core, QTreeWidgetItem* terminal_item, const Terminal& terminal_data);
+		TerminalEditorWindow(AppCore& core, int level_index, const Terminal& terminal_data, const QString& title);
 		~TerminalEditorWindow();
-		
-		QTreeWidgetItem* get_terminal_item() const;
+
+		int get_level_index() const;
 		const Terminal& get_terminal_data() const;
 
 		bool is_modified() const;
 		void clear_modified();
 
 		bool validate_terminal_info();
-		void update_window_title();
+		void update_window_title(const QString& title);
 		void save_screens();
 	signals:
 		void editor_closed();
@@ -31,6 +31,7 @@ namespace HuxApp
 		void init_ui();
 		void init_terminal_info();
 		void init_screen_editor();
+		void update_window_title_internal();
 
 		void terminal_data_modified();
 		void update_preview();

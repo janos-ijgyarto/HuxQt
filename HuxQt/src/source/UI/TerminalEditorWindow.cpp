@@ -30,9 +30,10 @@ namespace HuxApp
 
 	struct TerminalEditorWindow::Internal
 	{
-		Internal(QTreeWidgetItem* terminal_item, const Terminal& terminal_data)
-			: m_terminal_item(terminal_item)
+		Internal(int level_index, const Terminal& terminal_data, const QString& title)
+			: m_level_index(level_index)
             , m_terminal_data(terminal_data)
+            , m_title(title)
 		{}
 
         void update_screen_browser_buttons()
@@ -216,8 +217,9 @@ namespace HuxApp
 
 		Ui::TerminalEditorWindow m_ui;
 
-        QTreeWidgetItem* m_terminal_item; // Pointer to the tree widget item in the scenario browser
+        const int m_level_index; // Pointer to the tree widget item in the scenario browser
         Terminal m_terminal_data;
+        QString m_title;
 
         DisplaySystem::ViewID m_view_id;
 
@@ -233,9 +235,9 @@ namespace HuxApp
         QTimer m_edit_timer;
 	};
 
-	TerminalEditorWindow::TerminalEditorWindow(AppCore& core, QTreeWidgetItem* terminal_item, const Terminal& terminal_data)
+	TerminalEditorWindow::TerminalEditorWindow(AppCore& core, int level_index, const Terminal& terminal_data, const QString& title)
 		: m_core(core)
-		, m_internal(std::make_unique<Internal>(terminal_item, terminal_data))
+		, m_internal(std::make_unique<Internal>(level_index, terminal_data, title))
 	{
 		m_internal->m_ui.setupUi(this);
         m_internal->m_edit_timer.stop();
@@ -251,14 +253,14 @@ namespace HuxApp
         display_system.release_graphics_view(m_internal->m_view_id, m_internal->m_ui.screen_preview);
     }
 
-    QTreeWidgetItem* TerminalEditorWindow::get_terminal_item() const { return m_internal->m_terminal_item; }
+    int TerminalEditorWindow::get_level_index() const { return m_internal->m_level_index; }
     const Terminal& TerminalEditorWindow::get_terminal_data() const { return m_internal->m_terminal_data; }
 
 	bool TerminalEditorWindow::is_modified() const { return m_internal->m_modified; }
 	void TerminalEditorWindow::clear_modified() 
 	{
 		m_internal->m_modified = false;
-        update_window_title();
+        update_window_title_internal();
 	}
 
     bool TerminalEditorWindow::validate_terminal_info()
@@ -275,17 +277,10 @@ namespace HuxApp
         return true;
     }
 
-    void TerminalEditorWindow::update_window_title()
+    void TerminalEditorWindow::update_window_title(const QString& title)
     {
-        // We can get the terminal ID from the scenario item index in its parent
-        QTreeWidgetItem* level_item = m_internal->m_terminal_item->parent();
-        const int terminal_id = level_item->indexOfChild(m_internal->m_terminal_item);
-        QString title = QStringLiteral("Terminal Editor - %1 / TERMINAL %2").arg(m_internal->m_terminal_item->parent()->text(0)).arg(terminal_id);
-        if (m_internal->m_modified)
-        {
-            title += QStringLiteral(" (Modified)");
-        }
-        setWindowTitle(title);
+        m_internal->m_title = title;
+        update_window_title_internal();
     }
 
     void TerminalEditorWindow::save_screens()
@@ -364,7 +359,7 @@ namespace HuxApp
     void TerminalEditorWindow::init_ui()
     {
         // Set the title
-        update_window_title();
+        update_window_title_internal();
 
         init_terminal_info();
         init_screen_editor();
@@ -457,13 +452,25 @@ namespace HuxApp
         m_internal->update_screen_browser_buttons();
     }
 
+    void TerminalEditorWindow::update_window_title_internal()
+    {
+        if (m_internal->m_modified)
+        {
+            setWindowTitle(m_internal->m_title + QStringLiteral(" (Modified)"));
+        }
+        else
+        {
+            setWindowTitle(m_internal->m_title);
+        }
+    }
+
     void TerminalEditorWindow::terminal_data_modified()
     {
         if (!m_internal->m_modified)
         {
             m_internal->m_modified = true;
         }
-        update_window_title();
+        update_window_title_internal();
     }
 
     void TerminalEditorWindow::update_preview()

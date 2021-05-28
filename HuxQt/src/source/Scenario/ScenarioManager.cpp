@@ -725,6 +725,11 @@ namespace HuxApp
 					ScriptParser parser(parsed_level);
 					if (parser.parse_level(current_file))
 					{
+						// Level successfully parsed, assign terminal IDs (used by the UI)
+						for (Terminal& current_terminal : parsed_level.m_terminals)
+						{
+							current_terminal.m_id = scenario.m_terminal_id_counter++;
+						}
 						scenario.m_levels.push_back(parsed_level);
 					}
 					break;
@@ -935,22 +940,27 @@ namespace HuxApp
 		scenario.m_levels.erase(scenario.m_levels.begin() + level_index);
 	}
 
-	void ScenarioManager::add_level_terminal(Level& level) 
+	void ScenarioManager::add_level_terminal(Scenario& scenario, Level& level)
 	{
 		level.m_terminals.emplace_back(); 
-		level.set_modified(true);
+		level.m_terminals.back().m_id = scenario.m_terminal_id_counter++;
+		level.set_modified();
 	}
 
-	void ScenarioManager::add_level_terminal(Level& level, const Terminal& terminal, size_t index)
+	void ScenarioManager::add_level_terminal(Scenario& scenario, Level& level, const Terminal& terminal, size_t index)
 	{
 		const size_t terminal_index = std::clamp(index, size_t(0), level.m_terminals.size());
-		level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminal);
-		level.set_modified(true);
+		auto new_terminal_it = level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminal);
+		new_terminal_it->m_id = scenario.m_terminal_id_counter++;
+		new_terminal_it->set_modified(true);
+		level.set_modified();
 	}
 
 	void ScenarioManager::move_level_terminal(Level& level, size_t terminal_index, size_t new_index)
 	{
 		auto from_it = level.m_terminals.begin() + terminal_index;
+		from_it->set_modified(true);
+
 		auto to_it = level.m_terminals.begin() + new_index;
 		if (new_index < terminal_index)
 		{
@@ -960,12 +970,13 @@ namespace HuxApp
 		{
 			std::rotate(from_it, from_it + 1, to_it + 1);
 		}
-		level.set_modified(true);
+		level.set_modified();
 	}
 
 	void ScenarioManager::remove_level_terminal(Level& level, size_t terminal_index)
 	{
 		level.m_terminals.erase(level.m_terminals.begin() + terminal_index);
+		level.set_modified();
 	}
 
 	void ScenarioManager::add_terminal_screen(Terminal& terminal, size_t index, bool unfinished)
@@ -973,6 +984,7 @@ namespace HuxApp
 		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
 		const size_t screen_index = std::clamp(index, size_t(0), screen_vec.size());
 		screen_vec.emplace(screen_vec.begin() + screen_index);
+		terminal.set_modified(true);
 	}
 
 	void ScenarioManager::move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished)
@@ -989,17 +1001,20 @@ namespace HuxApp
 		{
 			std::rotate(from_it, from_it + 1, to_it + 1);
 		}
+		terminal.set_modified(true);
 	}
 
 	void ScenarioManager::remove_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished)
 	{
 		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
 		screen_vec.erase(screen_vec.begin() + screen_index);
+		terminal.set_modified(true);
 	}
 
 	void ScenarioManager::clear_terminal_screen_group(Terminal& terminal, bool unfinished)
 	{
 		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
 		screen_vec.clear();
+		terminal.set_modified(true);
 	}
 }

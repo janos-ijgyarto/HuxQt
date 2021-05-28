@@ -46,8 +46,8 @@ namespace HuxApp
 		static bool delete_scenario_level_script(Scenario& scenario, size_t level_index);
 		static void remove_scenario_level(Scenario& scenario, size_t level_index);
 
-		static void add_level_terminal(Level& level);
-		static void add_level_terminal(Level& level, const Terminal& terminal, size_t index);
+		static void add_level_terminal(Scenario& scenario, Level& level);
+		static void add_level_terminal(Scenario& scenario, Level& level, const Terminal& terminal, size_t index);
 		static void move_level_terminal(Level& level, size_t terminal_index, size_t new_index);
 		static void remove_level_terminal(Level& level, size_t terminal_index);
 

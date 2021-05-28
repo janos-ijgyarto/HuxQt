@@ -33,9 +33,9 @@ namespace HuxApp
         void preview_config_closed();
 
         // Tree functions
-        void scenario_item_selected(QTreeWidgetItem* current, QTreeWidgetItem* previous);
-        void scenario_item_double_clicked(QTreeWidgetItem* item, int column);
-        void scenario_tree_context_menu(const QPoint& point);
+        void scenario_item_selected(QListWidgetItem* current, QListWidgetItem* previous);
+        void scenario_item_double_clicked(QListWidgetItem* item);
+        void scenario_view_context_menu(const QPoint& point);
         void screen_item_selected(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
         // Scenario Editor
@@ -45,6 +45,7 @@ namespace HuxApp
         void copy_terminal_action();
         void paste_terminal_action();
 
+        void scenario_up_clicked();
         void add_terminal_clicked();
         void move_terminal_up_clicked();
         void move_terminal_down_clicked();

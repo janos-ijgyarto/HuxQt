@@ -15,7 +15,15 @@ namespace HuxApp
 		const QString& get_level_script_name() const { return m_level_script_name; }
 		
 		bool is_modified() const { return m_modified; }
-		void set_modified(bool modified) { m_modified = modified; }
+		void set_modified() { m_modified = true; }
+		void clear_modified()
+		{
+			for (Terminal& terminal : m_terminals)
+			{
+				terminal.set_modified(false);
+			}
+			m_modified = false;
+		}
 
 		Terminal& get_terminal(int index) { return m_terminals[index]; }
 		std::vector<Terminal>& get_terminals() { return m_terminals; }
