@@ -48,8 +48,9 @@ namespace HuxApp
 
 		static void add_level_terminal(Scenario& scenario, Level& level);
 		static void add_level_terminal(Scenario& scenario, Level& level, const Terminal& terminal, size_t index);
-		static void move_level_terminal(Level& level, size_t terminal_index, size_t new_index);
-		static void remove_level_terminal(Level& level, size_t terminal_index);
+		static void add_level_terminals(Scenario& scenario, Level& level, const std::vector<Terminal>& terminals, size_t index);
+		static void reorder_level_terminals(Level& level, const std::vector<int>& terminal_ids, const std::unordered_set<int>& moved_ids);
+		static void remove_level_terminals(Level& level, const std::vector<size_t>& terminal_indices);
 
 		static void add_terminal_screen(Terminal& terminal, size_t index, bool unfinished);
 		static void move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished);

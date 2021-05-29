@@ -46,6 +46,11 @@ namespace HuxApp
             LEVELS,
             TERMINALS
         };
+
+        QString generate_terminal_editor_title(const Level& level_data, const Terminal& terminal_data, int terminal_index)
+        {
+            return QStringLiteral("%1 / TERMINAL %2 (%3)").arg(level_data.get_name()).arg(terminal_index).arg(terminal_data.get_id());
+        }
     }
 
     struct HuxQt::Internal
@@ -64,6 +69,11 @@ namespace HuxApp
 
         DisplaySystem::ViewID m_view_id;
 
+        void clear_scenario_browser()
+        {
+            m_ui.scenario_browser_view->clear();
+        }
+
         void init_level_item(const Level& level_data, QListWidgetItem* level_item)
         {
             level_item->setText(level_data.get_name());
@@ -71,29 +81,34 @@ namespace HuxApp
 
             if (level_data.is_modified())
             {
-                QFont default_font = m_ui.scenario_name_label->font();
-                default_font.setBold(true);
-                level_item->setFont(default_font);
+                QFont font = level_item->font();
+                font.setBold(true);
+                level_item->setFont(font);
             }
         }
 
         void init_terminal_item(const Terminal& terminal, int terminal_index, QListWidgetItem* terminal_item)
         {
-            terminal_item->setText(QStringLiteral("TERMINAL %1").arg(terminal_index));
+            terminal_item->setText(QStringLiteral("TERMINAL %1 (%2)").arg(terminal_index).arg(terminal.get_id()));
             terminal_item->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_ComputerIcon));
-            terminal_item->setData(Qt::UserRole, terminal.get_id()); // Set ID so we can identify
+            terminal_item->setData(Qt::UserRole, terminal.get_id()); // Set ID so we can map between the item and the underlying data
 
-            if (terminal.is_modified())
-            {
-                QFont default_font = m_ui.scenario_name_label->font();
-                default_font.setBold(true);
-                terminal_item->setFont(default_font);
-            }
+            QFont font = terminal_item->font();
+            font.setBold(terminal.is_modified());
+            terminal_item->setFont(font);
         }
 
-        void clear_scenario_browser()
+        int get_terminal_index(QListWidgetItem* terminal_item)
         {
-            m_ui.scenario_browser_view->clear();
+            assert(m_scenario_browser_state == ScenarioBrowserState::TERMINALS);
+            return m_ui.scenario_browser_view->row(terminal_item);
+        }
+
+        int find_terminal_data_index(int terminal_id) const
+        {
+            assert(m_scenario_browser_state == ScenarioBrowserState::TERMINALS);
+            const Level& current_level = m_scenario.get_level(m_current_level_index);
+            return current_level.find_terminal(terminal_id);
         }
 
         void reset_scenario_browser_view()
@@ -104,6 +119,10 @@ namespace HuxApp
 
             if (m_scenario_browser_state == ScenarioBrowserState::LEVELS)
             {
+                // Change selection and drag & drop mode
+                m_ui.scenario_browser_view->setDragDropMode(QAbstractItemView::DragDropMode::NoDragDrop);
+                m_ui.scenario_browser_view->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
+
                 // List the levels
                 for (const Level& current_level : m_scenario.get_levels())
                 {
@@ -114,6 +133,10 @@ namespace HuxApp
             }
             else
             {
+                // Change selection and drag & drop mode
+                m_ui.scenario_browser_view->setDragDropMode(QAbstractItemView::DragDropMode::InternalMove);
+                m_ui.scenario_browser_view->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
+
                 // List the terminals
                 const Level& level_data = m_scenario.get_level(m_current_level_index);
                 int current_terminal_index = 0;
@@ -128,8 +151,7 @@ namespace HuxApp
                     {
                         // We can get the terminal ID from the scenario item index in its parent
                         TerminalEditorWindow* editor_window = m_terminal_editors[editor_index];
-                        const QString title = QStringLiteral("Terminal Editor - %1 / TERMINAL %2").arg(level_data.get_name()).arg(current_terminal_index);
-                        editor_window->update_window_title(title);
+                        editor_window->update_window_title(generate_terminal_editor_title(level_data, current_terminal, current_terminal_index));
                     }
                     ++current_terminal_index;
                 }
@@ -137,10 +159,50 @@ namespace HuxApp
             }
         }
 
+        void reorder_terminal_items()
+        {
+            // Cache the new ID order and the items that moved
+            std::vector<int> new_id_list;
+            std::unordered_set<int> moved_ids;
+            for (int current_row = 0; current_row < m_ui.scenario_browser_view->count(); ++current_row)
+            {
+                QListWidgetItem* current_terminal_item = m_ui.scenario_browser_view->item(current_row);
+                const int terminal_id = current_terminal_item->data(Qt::UserRole).toInt();
+
+                // Assume selected items were those that we moved (via drag & drop)
+                if (current_terminal_item->isSelected())
+                {
+                    moved_ids.insert(terminal_id);
+                }
+                new_id_list.push_back(terminal_id);
+            }
+
+            // Reorder the data
+            Level& current_level = m_scenario.get_level(m_current_level_index);
+            ScenarioManager::reorder_level_terminals(current_level, new_id_list, moved_ids);
+
+            // Reset the view to show the new order
+            reset_scenario_browser_view();
+
+            // Re-select the items that were moved
+            for (int current_row = 0; current_row < m_ui.scenario_browser_view->count(); ++current_row)
+            {
+                QListWidgetItem* current_terminal_item = m_ui.scenario_browser_view->item(current_row);
+                const int terminal_id = current_terminal_item->data(Qt::UserRole).toInt();
+                if (moved_ids.find(terminal_id) != moved_ids.end())
+                {
+                    current_terminal_item->setSelected(true);
+                }
+            }
+
+            scenario_edited();
+        }
+
         void display_scenario_levels()
         {
             m_scenario_browser_state = ScenarioBrowserState::LEVELS;
             m_current_level_index = -1;
+            m_ui.current_level_label->clear();
             reset_scenario_browser_view();
         }
 
@@ -149,6 +211,7 @@ namespace HuxApp
             // Store the current level index
             m_current_level_index = m_ui.scenario_browser_view->row(level_item);           
             m_scenario_browser_state = ScenarioBrowserState::TERMINALS;
+            m_ui.current_level_label->setText(level_item->text());
             reset_scenario_browser_view();
         }
         
@@ -171,13 +234,21 @@ namespace HuxApp
             screen_item->setIcon(0, QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_FileDialogDetailedView));
         }
 
-        QListWidgetItem* get_current_scenario_item() const { return m_ui.scenario_browser_view->currentItem(); }
+        QListWidgetItem* get_selected_level() const
+        {
+            assert(m_scenario_browser_state == ScenarioBrowserState::LEVELS);
+            QList<QListWidgetItem*> selected_items = m_ui.scenario_browser_view->selectedItems();
+            if (!selected_items.isEmpty())
+            {
+                return selected_items.front();
+            }
+            return nullptr;
+        }
 
-        int get_terminal_index(QListWidgetItem* terminal_item) const
+        QList<QListWidgetItem*> get_selected_terminals() const
         {
             assert(m_scenario_browser_state == ScenarioBrowserState::TERMINALS);
-            assert(terminal_item);
-            return m_ui.scenario_browser_view->row(terminal_item);
+            return m_ui.scenario_browser_view->selectedItems();
         }
 
         bool is_screen_item(QTreeWidgetItem* item) const
@@ -342,21 +413,11 @@ namespace HuxApp
             if (m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
             {
                 m_ui.add_terminal_button->setEnabled(true);
-                m_ui.remove_terminal_button->setEnabled(true);
-
-                QListWidgetItem* current_terminal = get_current_scenario_item();
-                if (current_terminal)
-                {
-                    const int terminal_index = get_terminal_index(current_terminal);
-                    m_ui.move_terminal_up_button->setEnabled(terminal_index > 0);
-                    m_ui.move_terminal_down_button->setEnabled(terminal_index < (m_ui.scenario_browser_view->count() - 1));
-                }
+                m_ui.remove_terminal_button->setEnabled(!get_selected_terminals().isEmpty());
             }
             else
             {
                 m_ui.add_terminal_button->setEnabled(false);
-                m_ui.move_terminal_up_button->setEnabled(false);
-                m_ui.move_terminal_down_button->setEnabled(false);
                 m_ui.remove_terminal_button->setEnabled(false);
             }
         }
@@ -439,15 +500,14 @@ namespace HuxApp
         {
             // First check if we already have an editor open for this item
             TerminalEditorWindow* editor_window = nullptr;
-            const int terminal_index = m_ui.scenario_browser_view->row(item);
+            const int terminal_index = get_terminal_index(item);
             const Level& selected_level = m_scenario.get_level(m_current_level_index);
             const Terminal& selected_terminal = selected_level.get_terminal(terminal_index);
 
             const int editor_window_index = find_terminal_editor(selected_terminal);
             if (editor_window_index == -1)
             {
-                const QString title = QStringLiteral("Terminal Editor - %1 / TERMINAL %2").arg(selected_level.get_name()).arg(terminal_index);
-                editor_window = new TerminalEditorWindow(core, m_current_level_index, selected_terminal, title);
+                editor_window = new TerminalEditorWindow(core, m_current_level_index, selected_terminal, generate_terminal_editor_title(selected_level, selected_terminal, terminal_index));
 
                 // Connect signals between the editor and the main windows
                 HuxQt* main_window = core.get_main_window();
@@ -463,26 +523,6 @@ namespace HuxApp
             editor_window->show();
             editor_window->activateWindow();
             editor_window->raise();
-        }
-
-        void move_terminal_node(bool move_up)
-        {
-            QListWidgetItem* current_terminal = get_current_scenario_item();
-            const int terminal_index = get_terminal_index(current_terminal);
-            m_ui.scenario_browser_view->setCurrentItem(nullptr);
-
-            const int new_index = move_up ? terminal_index - 1 : terminal_index + 1;
-
-            Level& selected_level = m_scenario.get_level(m_current_level_index);
-            ScenarioManager::move_level_terminal(selected_level, terminal_index, new_index);
-
-            // Move the UI item
-            m_ui.scenario_browser_view->takeItem(terminal_index);
-            m_ui.scenario_browser_view->insertItem(new_index, current_terminal);
-
-            reset_scenario_browser_view();
-            m_ui.scenario_browser_view->setCurrentItem(m_ui.scenario_browser_view->item(new_index));
-            scenario_edited();
         }
 
         bool save_terminal_editors()
@@ -549,16 +589,10 @@ namespace HuxApp
                 Level& selected_level = m_scenario.get_level(editor_window->get_level_index());
                 const Terminal& edited_terminal_data = editor_window->get_terminal_data();
 
-                auto& level_terminals = selected_level.get_terminals();
-                auto terminal_it = std::find_if(level_terminals.begin(), level_terminals.end(),
-                    [edited_terminal_data](const Terminal& current_terminal)
-                    {
-                        return (edited_terminal_data.get_id() == current_terminal.get_id());
-                    }
-                );
-                assert(terminal_it != level_terminals.end());
-                Terminal& selected_terminal = *terminal_it;
+                const int edited_terminal_index = selected_level.find_terminal(edited_terminal_data.get_id());
+                assert(edited_terminal_index >= 0);
 
+                Terminal& selected_terminal = selected_level.get_terminal(edited_terminal_index);
                 selected_terminal = edited_terminal_data;
                 selected_terminal.set_modified(true);
                 selected_level.set_modified();
@@ -695,8 +729,6 @@ namespace HuxApp
         m_internal->m_ui.scenario_up_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_FileDialogToParent));
 
         m_internal->m_ui.add_terminal_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_FileIcon));
-        m_internal->m_ui.move_terminal_up_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_ArrowUp));
-        m_internal->m_ui.move_terminal_down_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_ArrowDown));
         m_internal->m_ui.remove_terminal_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_TrashIcon));
 
         m_internal->m_ui.terminal_first_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_MediaSkipBackward));
@@ -720,8 +752,10 @@ namespace HuxApp
 
         // Scenario browser
         connect(m_internal->m_ui.scenario_up_button, &QToolButton::clicked, this, &HuxQt::scenario_up_clicked);
+        connect(m_internal->m_ui.scenario_browser_view, &Utils::ScenarioBrowserWidget::items_dropped, this, &HuxQt::terminal_items_moved, Qt::ConnectionType::QueuedConnection);
+
         m_internal->m_ui.scenario_browser_view->setContextMenuPolicy(Qt::CustomContextMenu);
-        connect(m_internal->m_ui.scenario_browser_view, &QListWidget::currentItemChanged, this, &HuxQt::scenario_item_selected);
+        connect(m_internal->m_ui.scenario_browser_view, &QListWidget::itemClicked, this, &HuxQt::scenario_item_clicked);
         connect(m_internal->m_ui.scenario_browser_view, &QListWidget::itemDoubleClicked, this, &HuxQt::scenario_item_double_clicked);
         connect(m_internal->m_ui.scenario_browser_view, &QListWidget::customContextMenuRequested, this, &HuxQt::scenario_view_context_menu);
 
@@ -730,8 +764,6 @@ namespace HuxApp
 
         // Browser buttons
         connect(m_internal->m_ui.add_terminal_button, &QPushButton::clicked, this, &HuxQt::add_terminal_clicked);
-        connect(m_internal->m_ui.move_terminal_up_button, &QPushButton::clicked, this, &HuxQt::move_terminal_up_clicked);
-        connect(m_internal->m_ui.move_terminal_down_button, &QPushButton::clicked, this, &HuxQt::move_terminal_down_clicked);
         connect(m_internal->m_ui.remove_terminal_button, &QPushButton::clicked, this, &HuxQt::remove_terminal_clicked);
 
         // Preview buttons
@@ -829,15 +861,16 @@ namespace HuxApp
         m_internal->m_preview_config = nullptr;
     }
 
-    void HuxQt::scenario_item_selected(QListWidgetItem* current, QListWidgetItem* previous)
+    void HuxQt::scenario_item_clicked(QListWidgetItem* item)
     {
-        if (current)
+        m_internal->update_scenario_buttons();
+        if (m_internal->m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
         {
-            if (m_internal->m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
+            if (item->isSelected())
             {
-                const int terminal_index = m_internal->get_terminal_index(current);
+                const int terminal_index = m_internal->get_terminal_index(item);
                 // Update the terminal UI
-                m_internal->terminal_node_selected(current, terminal_index);
+                m_internal->terminal_node_selected(item, terminal_index);
 
                 // Jump to the first screen child (if possible)
                 QTreeWidgetItemIterator screen_iterator(m_internal->m_ui.screen_browser_tree);
@@ -852,7 +885,6 @@ namespace HuxApp
                 }
             }
         }
-
         // TODO: anything else?
     }
 
@@ -936,7 +968,7 @@ namespace HuxApp
 
     void HuxQt::remove_level_action()
     {
-        QListWidgetItem* level_item = m_internal->get_current_scenario_item();
+        QListWidgetItem* level_item = m_internal->get_selected_level();
         assert(m_internal->m_scenario_browser_state == ScenarioBrowserState::LEVELS);
 
         // NOTE: deleting a level from the scenario view only simply means we won't export any updates for it. The user can opt to delete the file as well
@@ -957,29 +989,45 @@ namespace HuxApp
         }
     }
 
+    void HuxQt::terminal_items_moved()
+    {
+        if (m_internal->m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
+        {
+            m_internal->reorder_terminal_items();
+        }
+    }
+
     void HuxQt::copy_terminal_action()
     {
-        // Store a copy of the selected terminal in the clipboard
-        QListWidgetItem* terminal_item = m_internal->get_current_scenario_item();
-        const int terminal_index = m_internal->get_terminal_index(terminal_item);
-        Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
-
         m_internal->clear_clipboard();
-        m_internal->m_terminal_clipboard.push_back(selected_level.get_terminal(terminal_index));
+
+        // Store copies of the selected terminals in the clipboard
+        QList<QListWidgetItem*> selected_terminals = m_internal->get_selected_terminals();
+        Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
+        for (QListWidgetItem* current_terminal_item : selected_terminals)
+        {
+            const int terminal_index = m_internal->get_terminal_index(current_terminal_item);
+            m_internal->m_terminal_clipboard.push_back(selected_level.get_terminal(terminal_index));
+        }
     }
 
     void HuxQt::paste_terminal_action()
     {
-        QListWidgetItem* terminal_item = m_internal->get_current_scenario_item();
-        const int terminal_index = terminal_item ? m_internal->get_terminal_index(terminal_item) : 0;
+        // Paste at selection (or at the end if nothing is selected)
+        QList<QListWidgetItem*> selected_terminals = m_internal->get_selected_terminals();
+        const int selected_index = selected_terminals.isEmpty() ? m_internal->m_ui.scenario_browser_view->count() : m_internal->get_terminal_index(selected_terminals.front());
 
         Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
-        const int new_index = terminal_index + 1;
+        ScenarioManager::add_level_terminals(m_internal->m_scenario, selected_level, m_internal->m_terminal_clipboard, selected_index);
 
-        ScenarioManager::add_level_terminal(m_internal->m_scenario, selected_level, m_internal->m_terminal_clipboard.back(), new_index);
-        
-        // Reset view to include the new item
+        // Reset view to include the new items
         m_internal->reset_scenario_browser_view();
+
+        // Select the newly inserted terminals
+        for (int pasted_index = selected_index; pasted_index < (selected_index + m_internal->m_terminal_clipboard.size()); ++pasted_index)
+        {
+            m_internal->m_ui.scenario_browser_view->item(pasted_index)->setSelected(true);
+        }
     }
 
     void HuxQt::scenario_up_clicked()
@@ -1001,36 +1049,39 @@ namespace HuxApp
         m_internal->m_ui.scenario_browser_view->setCurrentRow(m_internal->m_ui.scenario_browser_view->count() - 1);
     }
 
-    void HuxQt::move_terminal_up_clicked() { m_internal->move_terminal_node(true); }
-
-    void HuxQt::move_terminal_down_clicked() { m_internal->move_terminal_node(false); }
-
     void HuxQt::remove_terminal_clicked()
     {
-        QListWidgetItem* terminal_item = m_internal->get_current_scenario_item();
-        assert(terminal_item);
-        const int terminal_index = m_internal->get_terminal_index(terminal_item);
+        QList<QListWidgetItem*> selected_terminals = m_internal->get_selected_terminals();
+        if (!selected_terminals.isEmpty())
+        {
+            Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
+            std::vector<size_t> selected_level_indices;
 
-        Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
-        const Terminal& selected_terminal = selected_level.get_terminal(terminal_index);
+            for (QListWidgetItem* current_terminal_item : selected_terminals)
+            {
+                const int terminal_index = m_internal->get_terminal_index(current_terminal_item);
+                selected_level_indices.push_back(terminal_index);
 
-        // Close any editors associated with this terminal
-        m_internal->remove_terminal_editor(selected_terminal);
+                // Close any editors associated with this terminal
+                const Terminal& selected_terminal = selected_level.get_terminal(terminal_index);
+                m_internal->remove_terminal_editor(selected_terminal);
+            }
 
-        // Remove the terminal itself
-        ScenarioManager::remove_level_terminal(selected_level, terminal_index);
-        
-        // Reset view to show changes
-        m_internal->reset_scenario_browser_view();
-        clear_preview_display();
+            // Remove the terminals
+            ScenarioManager::remove_level_terminals(selected_level, selected_level_indices);
+
+            // Reset view to show changes
+            m_internal->reset_scenario_browser_view();
+            clear_preview_display();
+        }
     }
 
     void HuxQt::display_current_screen()
     {
         if (m_internal->m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
         {
-            QListWidgetItem* current_terminal = m_internal->get_current_scenario_item();
-            if (!current_terminal)
+            QListWidgetItem* current_terminal = m_internal->m_ui.scenario_browser_view->currentItem();
+            if (!current_terminal || !current_terminal->isSelected())
             {
                 // TODO: clear the display?
                 return;

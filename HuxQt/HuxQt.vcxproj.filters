@@ -118,6 +118,9 @@
     <QtMoc Include="src\include\UI\TerminalEditorWindow.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
+    <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h">
+      <Filter>Header Files\Utils</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\source\UI\DisplaySystem.cpp">
@@ -161,6 +164,12 @@
     </ClCompile>
     <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp">
       <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\Scenario\Level.cpp">
+      <Filter>Source Files\Scenario</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp">
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

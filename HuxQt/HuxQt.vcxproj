@@ -134,12 +134,14 @@
     <QtMoc Include="src\include\UI\ScreenEditTab.h" />
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h" />
     <QtMoc Include="src\include\UI\TerminalEditorWindow.h" />
+    <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h" />
     <ClInclude Include="src\include\Utils\Utilities.h" />
     <QtMoc Include="src\include\UI\HuxQt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\source\AppCore.cpp" />
     <ClCompile Include="src\source\main.cpp" />
+    <ClCompile Include="src\source\Scenario\Level.cpp" />
     <ClCompile Include="src\source\Scenario\Scenario.cpp" />
     <ClCompile Include="src\source\Scenario\ScenarioManager.cpp" />
     <ClCompile Include="src\source\Scenario\Terminal.cpp" />
@@ -155,6 +157,7 @@
     <ClCompile Include="src\source\UI\PreviewConfigWindow.cpp" />
     <ClCompile Include="src\source\UI\ScreenEditTab.cpp" />
     <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp" />
+    <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="src\resources\fat_hux.ico" />

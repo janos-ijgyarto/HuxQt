@@ -57,14 +57,25 @@
           </layout>
          </item>
          <item>
-          <widget class="QToolButton" name="scenario_up_button">
-           <property name="text">
-            <string>...</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="scenario_up_button_hbox">
+           <item>
+            <widget class="QToolButton" name="scenario_up_button">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="current_level_label">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QListWidget" name="scenario_browser_view"/>
+          <widget class="HuxApp::Utils::ScenarioBrowserWidget" name="scenario_browser_view"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="scenario_browser_buttons_hbox">
@@ -78,38 +89,6 @@
              </property>
              <property name="toolTip">
               <string>Add New Terminal</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="move_terminal_up_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Move Terminal Up</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="move_terminal_down_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Move Terminal Down</string>
              </property>
              <property name="text">
               <string/>
@@ -326,13 +305,6 @@
     <addaction name="action_save_scenario"/>
     <addaction name="action_export_scenario_scripts"/>
    </widget>
-   <widget class="QMenu" name="menu_edit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <addaction name="action_undo"/>
-    <addaction name="action_redo"/>
-   </widget>
    <widget class="QMenu" name="menu_settings">
     <property name="title">
      <string>Settings</string>
@@ -340,7 +312,6 @@
     <addaction name="action_terminal_preview_config"/>
    </widget>
    <addaction name="menu_file"/>
-   <addaction name="menu_edit"/>
    <addaction name="menu_settings"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
@@ -376,6 +347,13 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>HuxApp::Utils::ScenarioBrowserWidget</class>
+   <extends>QListWidget</extends>
+   <header>Utils/ScenarioBrowserWidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/HuxQt.qrc"/>
  </resources>

@@ -956,26 +956,61 @@ namespace HuxApp
 		level.set_modified();
 	}
 
-	void ScenarioManager::move_level_terminal(Level& level, size_t terminal_index, size_t new_index)
+	void ScenarioManager::add_level_terminals(Scenario& scenario, Level& level, const std::vector<Terminal>& terminals, size_t index)
 	{
-		auto from_it = level.m_terminals.begin() + terminal_index;
-		from_it->set_modified(true);
+		const size_t terminal_index = std::clamp(index, size_t(0), level.m_terminals.size());
 
-		auto to_it = level.m_terminals.begin() + new_index;
-		if (new_index < terminal_index)
+		auto new_terminals_begin = level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminals.begin(), terminals.end());
+		auto new_terminals_end = new_terminals_begin + terminals.size();
+		for (auto new_terminal_it = new_terminals_begin; new_terminal_it != new_terminals_end; ++new_terminal_it)
 		{
-			std::rotate(to_it, from_it, from_it + 1);
-		}
-		else if (new_index > terminal_index)
-		{
-			std::rotate(from_it, from_it + 1, to_it + 1);
+			new_terminal_it->m_id = scenario.m_terminal_id_counter++;
+			new_terminal_it->set_modified(true);
 		}
 		level.set_modified();
 	}
 
-	void ScenarioManager::remove_level_terminal(Level& level, size_t terminal_index)
+	void ScenarioManager::reorder_level_terminals(Level& level, const std::vector<int>& terminal_ids, const std::unordered_set<int>& moved_ids)
 	{
-		level.m_terminals.erase(level.m_terminals.begin() + terminal_index);
+		assert(terminal_ids.size() == level.m_terminals.size());
+		const std::vector<Terminal> level_terminals = level.m_terminals;
+		auto terminal_it = level.m_terminals.begin();
+		for (int current_id : terminal_ids)
+		{
+			auto moving_terminal_it = std::find_if(level_terminals.begin(), level_terminals.end(),
+				[current_id](const Terminal& current_terminal)
+				{
+					return (current_terminal.get_id() == current_id);
+				}
+			);
+			assert(moving_terminal_it != level_terminals.end());
+
+			*terminal_it = *moving_terminal_it;
+			// Indicate which terminals were moved
+			if (moved_ids.find(current_id) != moved_ids.end())
+			{
+				terminal_it->set_modified(true);
+			}
+			++terminal_it;
+		}
+		level.set_modified();
+	}
+
+	void ScenarioManager::remove_level_terminals(Level& level, const std::vector<size_t>& terminal_indices)
+	{
+		const std::vector<Terminal> prev_terminals = level.m_terminals;
+		level.m_terminals.clear();
+
+		size_t current_index = 0;
+		for (const Terminal& current_terminal : prev_terminals)
+		{
+			if (std::find(terminal_indices.begin(), terminal_indices.end(), current_index) == terminal_indices.end())
+			{
+				// Index not among those to be removed
+				level.m_terminals.push_back(current_terminal);
+			}
+			++current_index;
+		}
 		level.set_modified();
 	}
 

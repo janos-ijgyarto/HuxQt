@@ -228,6 +228,7 @@ namespace HuxApp
 
         // Flags
 		bool m_modified = false;
+        bool m_saved = false;
         bool m_screen_text_dirty = false;
         bool m_resource_browser_enabled = false;
 
@@ -260,6 +261,7 @@ namespace HuxApp
 	void TerminalEditorWindow::clear_modified() 
 	{
 		m_internal->m_modified = false;
+        m_internal->m_saved = false;
         update_window_title_internal();
 	}
 
@@ -294,7 +296,8 @@ namespace HuxApp
 
     void TerminalEditorWindow::closeEvent(QCloseEvent* event)
     {
-        if (m_internal->m_modified)
+        // Prompt in case we modified the terminal and did not click OK
+        if (m_internal->m_modified && !m_internal->m_saved)
         {
             // Prompt user if they want to save changes
             const QMessageBox::StandardButton user_response = QMessageBox::question(this, "Terminal Modified",
@@ -456,11 +459,11 @@ namespace HuxApp
     {
         if (m_internal->m_modified)
         {
-            setWindowTitle(m_internal->m_title + QStringLiteral(" (Modified)"));
+            setWindowTitle(QStringLiteral("Terminal Editor - ") + m_internal->m_title + QStringLiteral(" (Modified)"));
         }
         else
         {
-            setWindowTitle(m_internal->m_title);
+            setWindowTitle(QStringLiteral("Terminal Editor - ") + m_internal->m_title);
         }
     }
 
@@ -468,6 +471,7 @@ namespace HuxApp
     {
         if (!m_internal->m_modified)
         {
+            m_internal->m_ui.dialog_button_box->button(QDialogButtonBox::StandardButton::Ok)->setEnabled(true);
             m_internal->m_modified = true;
         }
         update_window_title_internal();
@@ -535,6 +539,9 @@ namespace HuxApp
 
     void TerminalEditorWindow::ok_clicked()
     {
+        // Save changes and clear the modified flag
+        save_screens();
+        m_internal->m_saved = true;
         close();
     }
 

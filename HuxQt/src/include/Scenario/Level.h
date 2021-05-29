@@ -30,6 +30,8 @@ namespace HuxApp
 
 		const Terminal& get_terminal(int index) const { return m_terminals[index]; }
 		const std::vector<Terminal>& get_terminals() const { return m_terminals; }
+
+		int find_terminal(int terminal_id) const;
 	private:
 		QString m_name;
 		QString m_level_dir_name;
