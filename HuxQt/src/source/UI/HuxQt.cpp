@@ -1028,6 +1028,8 @@ namespace HuxApp
         {
             m_internal->m_ui.scenario_browser_view->item(pasted_index)->setSelected(true);
         }
+
+        m_internal->scenario_edited();
     }
 
     void HuxQt::scenario_up_clicked()
@@ -1047,6 +1049,8 @@ namespace HuxApp
         // Reset view to include the new item
         m_internal->reset_scenario_browser_view();
         m_internal->m_ui.scenario_browser_view->setCurrentRow(m_internal->m_ui.scenario_browser_view->count() - 1);
+
+        m_internal->scenario_edited();
     }
 
     void HuxQt::remove_terminal_clicked()
@@ -1073,6 +1077,8 @@ namespace HuxApp
             // Reset view to show changes
             m_internal->reset_scenario_browser_view();
             clear_preview_display();
+
+            m_internal->scenario_edited();
         }
     }
 
@@ -1176,6 +1182,7 @@ namespace HuxApp
 
                 selected_level.set_modified();
                 m_internal->reset_scenario_browser_view();
+                m_internal->scenario_edited();
             }
         }
 

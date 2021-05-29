@@ -145,6 +145,7 @@ namespace HuxApp
     void ScreenEditTab::connect_signals()
     {
         connect(m_ui.screen_type_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::screen_type_combo_activated);
+        connect(m_ui.alignment_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::screen_alignment_combo_activated);
         connect(m_ui.text_color_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::color_combo_activated);
         connect(m_ui.resource_id_edit, &QLineEdit::textEdited, this, &ScreenEditTab::screen_resource_edited);
         connect(m_ui.screen_text_edit, &QPlainTextEdit::textChanged, this, &ScreenEditTab::screen_text_edited);
