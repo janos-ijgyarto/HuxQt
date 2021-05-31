@@ -115,7 +115,7 @@
     <QtUic Include="src\forms\ExportScenarioDialog.ui" />
     <QtUic Include="src\forms\HuxQt.ui" />
     <QtUic Include="src\forms\PreviewConfigWindow.ui" />
-    <QtUic Include="src\forms\ScreenEditTab.ui" />
+    <QtUic Include="src\forms\ScreenEditWidget.ui" />
     <QtUic Include="src\forms\TerminalEditorWindow.ui" />
   </ItemGroup>
   <ItemGroup>
@@ -131,7 +131,7 @@
     <ClInclude Include="src\include\UI\DisplayData.h" />
     <ClInclude Include="src\include\UI\DisplaySystem.h" />
     <QtMoc Include="src\include\UI\PreviewConfigWindow.h" />
-    <QtMoc Include="src\include\UI\ScreenEditTab.h" />
+    <QtMoc Include="src\include\UI\ScreenEditWidget.h" />
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h" />
     <QtMoc Include="src\include\UI\TerminalEditorWindow.h" />
     <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h" />
@@ -155,7 +155,7 @@
     <ClCompile Include="src\source\UI\ExportScenarioDialog.cpp" />
     <ClCompile Include="src\source\UI\HuxQt.cpp" />
     <ClCompile Include="src\source\UI\PreviewConfigWindow.cpp" />
-    <ClCompile Include="src\source\UI\ScreenEditTab.cpp" />
+    <ClCompile Include="src\source\UI\ScreenEditWidget.cpp" />
     <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp" />
     <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp" />
   </ItemGroup>

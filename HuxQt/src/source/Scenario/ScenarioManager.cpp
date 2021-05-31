@@ -752,6 +752,23 @@ namespace HuxApp
 		return level_script_text;
 	}
 
+	void ScenarioManager::set_screen_clipboard(const Terminal& terminal_data)
+	{
+		if (!m_screen_clipboard)
+		{
+			m_screen_clipboard = std::make_unique<Terminal>();
+		}
+		*m_screen_clipboard = terminal_data;
+	}
+
+	void ScenarioManager::clear_screen_clipboard()
+	{
+		if (m_screen_clipboard)
+		{
+			m_screen_clipboard.reset();
+		}
+	}
+
 	QString ScenarioManager::convert_ao_to_html(const QString& ao_text)
 	{
 		// Parse the Aleph One formatting tags, turning them into HTML tags that Qt can display
@@ -1012,44 +1029,5 @@ namespace HuxApp
 			++current_index;
 		}
 		level.set_modified();
-	}
-
-	void ScenarioManager::add_terminal_screen(Terminal& terminal, size_t index, bool unfinished)
-	{
-		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
-		const size_t screen_index = std::clamp(index, size_t(0), screen_vec.size());
-		screen_vec.emplace(screen_vec.begin() + screen_index);
-		terminal.set_modified(true);
-	}
-
-	void ScenarioManager::move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished)
-	{
-		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
-		auto from_it = screen_vec.begin() + screen_index;
-		auto to_it = screen_vec.begin() + new_index;
-
-		if (new_index < screen_index)
-		{
-			std::rotate(to_it, from_it, from_it + 1);
-		}
-		else if (new_index > screen_index)
-		{
-			std::rotate(from_it, from_it + 1, to_it + 1);
-		}
-		terminal.set_modified(true);
-	}
-
-	void ScenarioManager::remove_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished)
-	{
-		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
-		screen_vec.erase(screen_vec.begin() + screen_index);
-		terminal.set_modified(true);
-	}
-
-	void ScenarioManager::clear_terminal_screen_group(Terminal& terminal, bool unfinished)
-	{
-		std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
-		screen_vec.clear();
-		terminal.set_modified(true);
 	}
 }

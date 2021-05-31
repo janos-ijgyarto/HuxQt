@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ScreenEditTab</class>
- <widget class="QWidget" name="ScreenEditTab">
+ <class>ScreenEditWidget</class>
+ <widget class="QWidget" name="ScreenEditWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -65,6 +65,12 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="toolTip">
         <string>Bold</string>
        </property>
@@ -81,6 +87,11 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="font">
+        <font>
+         <italic>true</italic>
+        </font>
+       </property>
        <property name="toolTip">
         <string>Italic</string>
        </property>
@@ -96,6 +107,11 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
        </property>
        <property name="toolTip">
         <string>Underline</string>

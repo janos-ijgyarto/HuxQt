@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Terminal Editor</string>
   </property>
-  <layout class="QVBoxLayout" name="main_vbox">
+  <layout class="QVBoxLayout" name="main_layout">
    <item>
     <widget class="QSplitter" name="main_splitter">
      <property name="orientation">
@@ -73,16 +73,14 @@
         </widget>
        </item>
        <item>
-        <widget class="QTreeWidget" name="screen_browser_tree">
-         <attribute name="headerVisible">
-          <bool>false</bool>
-         </attribute>
-         <column>
-          <property name="text">
-           <string notr="true">1</string>
-          </property>
-         </column>
+        <widget class="QToolButton" name="screen_browser_up_button">
+         <property name="text">
+          <string/>
+         </property>
         </widget>
+       </item>
+       <item>
+        <widget class="HuxApp::Utils::ScenarioBrowserWidget" name="screen_browser_view"/>
        </item>
        <item>
         <layout class="QHBoxLayout" name="screen_browser_buttons_hbox">
@@ -96,38 +94,6 @@
            </property>
            <property name="toolTip">
             <string>Add New Screen</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="move_screen_up_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Move Screen Up</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="move_screen_down_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Move Screen Down</string>
            </property>
            <property name="text">
             <string/>
@@ -154,71 +120,79 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="verticalLayoutWidget">
-      <layout class="QVBoxLayout" name="screen_editor_vbox">
-       <item>
-        <widget class="QLabel" name="edited_screen_tabs_label">
-         <property name="text">
-          <string>Edited Screens</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSplitter" name="screen_preview_splitter">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <widget class="QTabWidget" name="edited_screen_tabs">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="tabsClosable">
-           <bool>true</bool>
-          </property>
-          <property name="movable">
-           <bool>true</bool>
-          </property>
-         </widget>
-         <widget class="QWidget" name="gridLayoutWidget">
-          <layout class="QGridLayout" name="screen_preview_grid">
-           <item row="0" column="0">
-            <widget class="QLabel" name="screen_preview_label">
-             <property name="text">
-              <string>Screen preview:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="3">
-            <widget class="QGraphicsView" name="screen_preview"/>
-           </item>
-           <item row="0" column="2">
-            <widget class="QProgressBar" name="screen_update_progress_bar">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="value">
-              <number>24</number>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="screen_page_label">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-       </item>
-      </layout>
+     <widget class="QSplitter" name="screen_edit_splitter">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <layout class="QVBoxLayout" name="screen_edit_vbox">
+        <item>
+         <layout class="QHBoxLayout" name="current_screen_labels_hbox">
+          <item>
+           <widget class="QLabel" name="screen_edit_label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Current Screen:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="current_screen_label">
+            <property name="text">
+             <string>N/A</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="HuxApp::ScreenEditWidget" name="screen_edit_widget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="verticalLayoutWidget_3">
+       <layout class="QVBoxLayout" name="screen_preview_vbox">
+        <item>
+         <layout class="QHBoxLayout" name="screen_preview_labels_hbox">
+          <item>
+           <widget class="QLabel" name="screen_preview_label">
+            <property name="text">
+             <string>Screen preview:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="screen_page_label">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="screen_update_progress_bar">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="value">
+             <number>24</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGraphicsView" name="screen_preview"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </item>
@@ -231,6 +205,19 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>HuxApp::ScreenEditWidget</class>
+   <extends>QWidget</extends>
+   <header>UI/ScreenEditWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>HuxApp::Utils::ScenarioBrowserWidget</class>
+   <extends>QListWidget</extends>
+   <header>Utils/ScenarioBrowserWidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

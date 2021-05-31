@@ -21,7 +21,7 @@ namespace HuxApp
 
 		bool validate_terminal_info();
 		void update_window_title(const QString& title);
-		void save_screens();
+		void save_changes();
 	signals:
 		void editor_closed();
 	protected:
@@ -34,6 +34,7 @@ namespace HuxApp
 		void update_window_title_internal();
 
 		void terminal_data_modified();
+		void screen_edited(bool attributes);
 		void update_preview();
 
 		bool gather_teleport_info(bool unfinished);
@@ -48,19 +49,15 @@ namespace HuxApp
 		void paste_screen_action();
 
 		// Screen browser
-		void screen_item_clicked(QTreeWidgetItem* item, int column);
-		void open_screen(QTreeWidgetItem* item, int column);
+		void screen_item_clicked(QListWidgetItem* item);
+		void screen_item_double_clicked(QListWidgetItem* item);
+		void screen_items_moved();
+		void screen_selected(QListWidgetItem* item);
 
 		// Screen browser buttons
+		void screen_browser_up_clicked();
 		void add_screen_clicked();
-		void move_screen_up_clicked();
-		void move_screen_down_clicked();
 		void remove_screen_clicked();
-
-		// Screen tab slots
-		void current_tab_changed(int index);
-		void screen_edited(QTreeWidgetItem* screen_item);
-		void close_tab(int index);
 
 		void update_edit_notification();
 

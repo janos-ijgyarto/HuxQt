@@ -51,7 +51,7 @@
     <QtUic Include="src\forms\BrowsePictDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="src\forms\ScreenEditTab.ui">
+    <QtUic Include="src\forms\ScreenEditWidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="src\forms\AddLevelDialog.ui">
@@ -106,7 +106,7 @@
     <QtMoc Include="src\include\UI\BrowsePictDialog.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
-    <QtMoc Include="src\include\UI\ScreenEditTab.h">
+    <QtMoc Include="src\include\UI\ScreenEditWidget.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
     <QtMoc Include="src\include\UI\AddLevelDialog.h">
@@ -153,7 +153,7 @@
     <ClCompile Include="src\source\UI\BrowsePictDialog.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
-    <ClCompile Include="src\source\UI\ScreenEditTab.cpp">
+    <ClCompile Include="src\source\UI\ScreenEditWidget.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="src\source\UI\AddLevelDialog.cpp">

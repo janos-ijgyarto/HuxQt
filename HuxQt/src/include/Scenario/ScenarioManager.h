@@ -38,6 +38,10 @@ namespace HuxApp
 
 		QString print_level_script(const Level& level) const;
 
+		const Terminal* get_screen_clipboard() const { return m_screen_clipboard.get(); }
+		void set_screen_clipboard(const Terminal& terminal_data);
+		void clear_screen_clipboard();
+
 		static QString convert_ao_to_html(const QString& ao_text);
 		static QString export_hux_formatted_text(const QString& formatted_text);
 
@@ -51,11 +55,6 @@ namespace HuxApp
 		static void add_level_terminals(Scenario& scenario, Level& level, const std::vector<Terminal>& terminals, size_t index);
 		static void reorder_level_terminals(Level& level, const std::vector<int>& terminal_ids, const std::unordered_set<int>& moved_ids);
 		static void remove_level_terminals(Level& level, const std::vector<size_t>& terminal_indices);
-
-		static void add_terminal_screen(Terminal& terminal, size_t index, bool unfinished);
-		static void move_terminal_screen(Terminal& terminal, size_t screen_index, size_t new_index, bool unfinished);
-		static void remove_terminal_screen(Terminal& terminal, size_t screen_index, bool unfinished);
-		static void clear_terminal_screen_group(Terminal& terminal, bool unfinished);
 	private:
 		ScenarioManager(AppCore& core);
 
@@ -63,6 +62,7 @@ namespace HuxApp
 		void export_terminal_script(const Terminal& terminal, int terminal_index, QString& level_script_text) const;
 
 		AppCore& m_core;
+		std::unique_ptr<Terminal> m_screen_clipboard;
 
 		class ScriptParser;
 		friend AppCore;

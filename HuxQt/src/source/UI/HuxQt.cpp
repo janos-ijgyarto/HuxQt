@@ -584,7 +584,7 @@ namespace HuxApp
             if (editor_window->validate_terminal_info())
             {
                 // Make sure all the latest changes got saved
-                editor_window->save_screens();
+                editor_window->save_changes();
 
                 Level& selected_level = m_scenario.get_level(editor_window->get_level_index());
                 const Terminal& edited_terminal_data = editor_window->get_terminal_data();
@@ -909,12 +909,14 @@ namespace HuxApp
             QMenu context_menu;
             if (selected_item)
             {
-                context_menu.addAction("Copy Terminal", this, &HuxQt::copy_terminal_action);
+                // TODO: shortcut!
+                context_menu.addAction("Copy", this, &HuxQt::copy_terminal_action);
             }
             // Check if we can paste
             if (!m_internal->m_terminal_clipboard.empty())
             {
-                context_menu.addAction("Paste Terminal", this, &HuxQt::paste_terminal_action);
+                // TODO: shortcut!
+                context_menu.addAction("Paste", this, &HuxQt::paste_terminal_action);
             }
             const QPoint global_pos = m_internal->m_ui.scenario_browser_view->mapToGlobal(point);
             context_menu.exec(global_pos);
@@ -1059,12 +1061,12 @@ namespace HuxApp
         if (!selected_terminals.isEmpty())
         {
             Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
-            std::vector<size_t> selected_level_indices;
+            std::vector<size_t> selected_terminal_indices;
 
             for (QListWidgetItem* current_terminal_item : selected_terminals)
             {
                 const int terminal_index = m_internal->get_terminal_index(current_terminal_item);
-                selected_level_indices.push_back(terminal_index);
+                selected_terminal_indices.push_back(terminal_index);
 
                 // Close any editors associated with this terminal
                 const Terminal& selected_terminal = selected_level.get_terminal(terminal_index);
@@ -1072,7 +1074,7 @@ namespace HuxApp
             }
 
             // Remove the terminals
-            ScenarioManager::remove_level_terminals(selected_level, selected_level_indices);
+            ScenarioManager::remove_level_terminals(selected_level, selected_terminal_indices);
 
             // Reset view to show changes
             m_internal->reset_scenario_browser_view();

@@ -1,6 +1,6 @@
 #pragma once
 #include <QWidget>
-#include <ui_ScreenEditTab.h>
+#include <ui_ScreenEditWidget.h>
 
 #include "Scenario/Terminal.h"
 #include "Scenario/ScenarioManager.h"
@@ -9,20 +9,23 @@ namespace HuxApp
 {
 	class AppCore;
 
-	class ScreenEditTab : public QWidget
+	class ScreenEditWidget : public QWidget
 	{
 		Q_OBJECT
 	public:
-		ScreenEditTab(AppCore& core, QTreeWidgetItem* screen_item, const Terminal::Screen& screen_data);
+		ScreenEditWidget(QWidget* parent = nullptr);
+		void initialize(AppCore& core);
 
-		QTreeWidgetItem* get_screen_item() const { return m_screen_item; }
+		void reset_editor(const Terminal::Screen& screen_data);
+		void clear_editor();
+
 		const Terminal::Screen& get_screen_data() const { return m_screen_data; }
 		bool is_modified() const { return m_modified; }
 		
 		bool save_screen();
 		void update_display_text();
 	signals:
-		void screen_edited(QTreeWidgetItem* screen_item);
+		void screen_edited(bool attributes);
 	protected:
 		bool eventFilter(QObject* obj, QEvent* event) override;
 	private:
@@ -46,17 +49,19 @@ namespace HuxApp
 		void insert_font_tags(ScenarioManager::TextFont font);
 		void insert_color_tags();
 
-		void screen_edited_internal();
+		void screen_edited_internal(bool attributes);
 
-		AppCore& m_core;
+		AppCore* m_core;
 
-		QTreeWidgetItem* m_screen_item;
+		// Data
 		Terminal::Screen m_screen_data;
+
+		// Flags
 		bool m_modified;
 		bool m_text_dirty;
-
 		bool m_resource_browser_enabled;
+		bool m_initializing;
 
-		Ui::ScreenEditTab m_ui;
+		Ui::ScreenEditWidget m_ui;
 	};
 }

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "UI/ScreenEditTab.h"
+#include "UI/ScreenEditWidget.h"
 
 #include "Scenario/ScenarioManager.h"
 
@@ -62,17 +62,35 @@ namespace HuxApp
         };
     }
 
-    ScreenEditTab::ScreenEditTab(AppCore& core, QTreeWidgetItem* screen_item, const Terminal::Screen& screen_data)
-        : m_core(core)
-        , m_screen_item(screen_item)
-        , m_screen_data(screen_data)
+    ScreenEditWidget::ScreenEditWidget(QWidget* parent)
+        : QWidget(parent)
+        , m_core(nullptr)
         , m_modified(false)
         , m_text_dirty(false)
         , m_resource_browser_enabled(false)
+        , m_initializing(false)
     {
         m_ui.setupUi(this);
 
         init_ui();
+        connect_signals();
+    }
+
+    void ScreenEditWidget::initialize(AppCore& core)
+    {
+        m_core = &core;
+    }
+
+    void ScreenEditWidget::reset_editor(const Terminal::Screen& screen_data)
+    {
+        // Set initializing flag to lock the state changes
+        m_initializing = true;
+
+        // Reset flags
+        m_modified = false;
+        m_text_dirty = false;
+
+        m_screen_data = screen_data;
 
         // Initialize controls based on screen data
         m_ui.screen_type_combo->setCurrentIndex(Utils::to_integral(screen_data.m_type));
@@ -85,10 +103,23 @@ namespace HuxApp
         m_ui.resource_id_edit->setText(QString::number(screen_data.m_resource_id));
         m_ui.screen_text_edit->setPlainText(screen_data.m_script);
 
-        connect_signals();
+        // Unset the flag to allow state changes
+        m_initializing = false;
+    }
+    
+    void ScreenEditWidget::clear_editor()
+    {
+        // Set initializing flag to lock the state changes
+        m_initializing = true;
+
+        m_ui.resource_id_edit->clear();
+        m_ui.screen_text_edit->clear();
+
+        // Unset the flag to allow state changes
+        m_initializing = false;
     }
 
-    bool ScreenEditTab::save_screen()
+    bool ScreenEditWidget::save_screen()
     {
         // Validate screen data
         switch (m_screen_data.m_type)
@@ -123,7 +154,7 @@ namespace HuxApp
         return true;
     }
 
-    void ScreenEditTab::update_display_text()
+    void ScreenEditWidget::update_display_text()
     {
         if (m_text_dirty)
         {
@@ -132,7 +163,7 @@ namespace HuxApp
         }
     }
 
-    bool ScreenEditTab::eventFilter(QObject* obj, QEvent* event)
+    bool ScreenEditWidget::eventFilter(QObject* obj, QEvent* event)
     {
         if ((obj == m_ui.resource_id_edit) && (event->type() == QEvent::MouseButtonDblClick))
         {
@@ -142,21 +173,29 @@ namespace HuxApp
         return false;
     }
 
-    void ScreenEditTab::connect_signals()
+    void ScreenEditWidget::connect_signals()
     {
-        connect(m_ui.screen_type_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::screen_type_combo_activated);
-        connect(m_ui.alignment_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::screen_alignment_combo_activated);
-        connect(m_ui.text_color_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditTab::color_combo_activated);
-        connect(m_ui.resource_id_edit, &QLineEdit::textEdited, this, &ScreenEditTab::screen_resource_edited);
-        connect(m_ui.screen_text_edit, &QPlainTextEdit::textChanged, this, &ScreenEditTab::screen_text_edited);
+        connect(m_ui.screen_type_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::screen_type_combo_activated);
+        connect(m_ui.alignment_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::screen_alignment_combo_activated);
+        connect(m_ui.text_color_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::color_combo_activated);
+        connect(m_ui.resource_id_edit, &QLineEdit::textEdited, this, &ScreenEditWidget::screen_resource_edited);
+        connect(m_ui.screen_text_edit, &QPlainTextEdit::textChanged, this, &ScreenEditWidget::screen_text_edited);
 
-        connect(m_ui.bold_button, &QPushButton::clicked, this, &ScreenEditTab::bold_button_clicked);
-        connect(m_ui.italic_button, &QPushButton::clicked, this, &ScreenEditTab::italic_button_clicked);
-        connect(m_ui.underline_button, &QPushButton::clicked, this, &ScreenEditTab::underline_button_clicked);
-        connect(m_ui.text_color_button, &QPushButton::clicked, this, &ScreenEditTab::insert_color_tags);
+        connect(m_ui.bold_button, &QPushButton::clicked, this, &ScreenEditWidget::bold_button_clicked);
+        connect(m_ui.italic_button, &QPushButton::clicked, this, &ScreenEditWidget::italic_button_clicked);
+        connect(m_ui.underline_button, &QPushButton::clicked, this, &ScreenEditWidget::underline_button_clicked);
+        connect(m_ui.text_color_button, &QPushButton::clicked, this, &ScreenEditWidget::insert_color_tags);
+
+        // Add shortcuts
+        QShortcut* bold_shortcut = new QShortcut(QKeySequence("Ctrl+B"), m_ui.screen_text_edit);
+        QShortcut* italic_shortcut = new QShortcut(QKeySequence("Ctrl+I"), m_ui.screen_text_edit);
+        QShortcut* underline_shortcut = new QShortcut(QKeySequence("Ctrl+U"), m_ui.screen_text_edit);
+        connect(bold_shortcut, &QShortcut::activated, this, &ScreenEditWidget::bold_button_clicked);
+        connect(italic_shortcut, &QShortcut::activated, this, &ScreenEditWidget::italic_button_clicked);
+        connect(underline_shortcut, &QShortcut::activated, this, &ScreenEditWidget::underline_button_clicked);
     }
 
-    void ScreenEditTab::init_ui()
+    void ScreenEditWidget::init_ui()
     {
         m_ui.resource_id_edit->setValidator(new QIntValidator(this));
         m_ui.resource_id_edit->installEventFilter(this);
@@ -184,7 +223,7 @@ namespace HuxApp
         color_combo_activated(0); // Set the button to the appropriate color
     }
 
-    void ScreenEditTab::enable_controls(bool enable)
+    void ScreenEditWidget::enable_controls(bool enable)
     {
         m_ui.resource_id_edit->setEnabled(enable);
         m_ui.alignment_combo->setEnabled(enable);
@@ -196,7 +235,7 @@ namespace HuxApp
         m_ui.text_color_combo->setEnabled(enable);
     }
 
-    void ScreenEditTab::validate_screen(Terminal::ScreenType screen_type)
+    void ScreenEditWidget::validate_screen(Terminal::ScreenType screen_type)
     {
         // Enable/disable specific controls based on screen type
         const bool valid_screen = (screen_type != Terminal::ScreenType::NONE) && (screen_type != Terminal::ScreenType::TAG) && (screen_type != Terminal::ScreenType::STATIC);
@@ -223,79 +262,79 @@ namespace HuxApp
         }
     }
 
-    void ScreenEditTab::screen_type_combo_activated(int index)
+    void ScreenEditWidget::screen_type_combo_activated(int index)
     {
         if (index != Utils::to_integral(m_screen_data.m_type))
         {
             m_screen_data.m_type = static_cast<Terminal::ScreenType>(index);
             validate_screen(m_screen_data.m_type); // We changed the screen type, so we need to make sure the correct controls are available
-            screen_edited_internal();
+            screen_edited_internal(true);
         }
     }
 
-    void ScreenEditTab::screen_resource_clicked()
+    void ScreenEditWidget::screen_resource_clicked()
     {
         const Terminal::ScreenType current_screen_type = static_cast<Terminal::ScreenType>(m_ui.screen_type_combo->currentIndex());
         if (m_ui.resource_id_edit->isEnabled() && m_resource_browser_enabled)
         {
-            BrowsePictDialog* pict_dialog = new BrowsePictDialog(m_core, this);
-            connect(pict_dialog, &BrowsePictDialog::pict_selected, this, &ScreenEditTab::pict_selected);
+            BrowsePictDialog* pict_dialog = new BrowsePictDialog(*m_core, this);
+            connect(pict_dialog, &BrowsePictDialog::pict_selected, this, &ScreenEditWidget::pict_selected);
             pict_dialog->open();
         }
     }
 
-    void ScreenEditTab::pict_selected(int pict_id)
+    void ScreenEditWidget::pict_selected(int pict_id)
     {
         if (m_screen_data.m_resource_id != pict_id)
         {
             m_ui.resource_id_edit->setText(QString::number(pict_id));
             m_screen_data.m_resource_id = pict_id;
-            screen_edited_internal();
+            screen_edited_internal(true);
         }
     }
 
-    void ScreenEditTab::screen_resource_edited(const QString& text)
+    void ScreenEditWidget::screen_resource_edited(const QString& text)
     {
         const int new_resource_id = text.toInt();
         if (m_screen_data.m_resource_id != new_resource_id)
         {
             m_screen_data.m_resource_id = new_resource_id;
-            screen_edited_internal();
+            screen_edited_internal(true);
         }
     }
 
-    void ScreenEditTab::screen_alignment_combo_activated(int index)
+    void ScreenEditWidget::screen_alignment_combo_activated(int index)
     {
         if (index != Utils::to_integral(m_screen_data.m_alignment))
         {      
             m_screen_data.m_alignment = static_cast<Terminal::ScreenAlignment>(index);
-            screen_edited_internal();
+            screen_edited_internal(false);
         }
     }
 
-    void ScreenEditTab::screen_text_edited()
+    void ScreenEditWidget::screen_text_edited()
     {
         m_text_dirty = true;
         m_screen_data.m_script = m_ui.screen_text_edit->toPlainText();
-        screen_edited_internal();
+        screen_edited_internal(false);
     }
 
-    void ScreenEditTab::bold_button_clicked()
+    void ScreenEditWidget::bold_button_clicked()
     {
         insert_font_tags(ScenarioManager::TextFont::BOLD);
     }
 
-    void ScreenEditTab::italic_button_clicked()
+    void ScreenEditWidget::italic_button_clicked()
     {
         insert_font_tags(ScenarioManager::TextFont::ITALIC);
     }
 
-    void ScreenEditTab::underline_button_clicked()
+    void ScreenEditWidget::underline_button_clicked()
     {
         insert_font_tags(ScenarioManager::TextFont::UNDERLINE);
     }
 
-    void ScreenEditTab::color_combo_activated(int index)
+    void ScreenEditWidget::color_combo_activated(int index)
     {
         const ScenarioManager::TextColor selected_color = static_cast<ScenarioManager::TextColor>(index);
         
@@ -307,7 +346,7 @@ namespace HuxApp
         m_ui.text_color_button->setIcon(button_icon);
     }
 
-    void ScreenEditTab::insert_font_tags(ScenarioManager::TextFont font)
+    void ScreenEditWidget::insert_font_tags(ScenarioManager::TextFont font)
     {
         // TODO: possibly remove redundant tags within the selection?
         QTextCursor cursor = m_ui.screen_text_edit->textCursor();
@@ -325,7 +364,7 @@ namespace HuxApp
         }
     }
 
-    void ScreenEditTab::insert_color_tags()
+    void ScreenEditWidget::insert_color_tags()
     {
         // TODO: possibly remove redundant tags within the selection?
         QTextCursor cursor = m_ui.screen_text_edit->textCursor();
@@ -334,9 +373,12 @@ namespace HuxApp
         cursor.insertText(QStringLiteral("$C%1%2").arg(QString::number(color_index), cursor.selectedText()));
     }
 
-    void ScreenEditTab::screen_edited_internal()
+    void ScreenEditWidget::screen_edited_internal(bool attributes)
     {
-        m_modified = true;
-        emit(screen_edited(m_screen_item));
+        if (!m_initializing)
+        {
+            m_modified = true;
+            emit(screen_edited(attributes));
+        }
     }
 }
