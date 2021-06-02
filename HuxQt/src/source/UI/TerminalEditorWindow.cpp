@@ -87,6 +87,7 @@ namespace HuxApp
                 }
                 {
                     std::vector<Terminal::Screen>& finished_screens = terminal_data.get_screens(false);
+                    finished_screens.clear();
                     for (const Screen& current_screen_data : m_finished_screens.m_screens)
                     {
                         finished_screens.push_back(current_screen_data.m_data);
