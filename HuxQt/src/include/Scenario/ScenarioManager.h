@@ -36,6 +36,8 @@ namespace HuxApp
 		bool save_scenario(const QString& path, const Scenario& scenario, bool modified_only = true);
 		bool load_scenario(const QString& path, Scenario& scenario);
 
+		static bool import_level_terminals(Scenario& scenario, Level& destination_level, const QString& level_script_path);
+
 		QString print_level_script(const Level& level) const;
 
 		const Terminal* get_screen_clipboard() const { return m_screen_clipboard.get(); }

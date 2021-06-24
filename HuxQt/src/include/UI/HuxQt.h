@@ -48,6 +48,7 @@ namespace HuxApp
 
         void scenario_up_clicked();
         void add_terminal_clicked();
+        void import_level_script();
         void remove_terminal_clicked();
 
         // Terminal preview

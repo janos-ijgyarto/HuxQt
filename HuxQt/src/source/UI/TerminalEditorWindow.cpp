@@ -295,10 +295,18 @@ namespace HuxApp
 
         void update_screen_browser_buttons()
         {
-            const bool screen_list_state = (m_screen_browser_state == ScreenBrowserState::SCREEN_LIST);
-            m_ui.screen_browser_up_button->setEnabled(screen_list_state);
-            m_ui.new_screen_button->setEnabled(screen_list_state);
-            m_ui.delete_screen_button->setEnabled(screen_list_state);
+            if (m_screen_browser_state == ScreenBrowserState::SCREEN_LIST)
+            {
+                m_ui.screen_browser_up_button->setEnabled(true);
+                m_ui.new_screen_button->setEnabled(true);
+                m_ui.delete_screen_button->setEnabled(!get_selected_screens().isEmpty());
+            }
+            else
+            {
+                m_ui.screen_browser_up_button->setEnabled(false);
+                m_ui.new_screen_button->setEnabled(false);
+                m_ui.delete_screen_button->setEnabled(false);
+            }
         }
 
         void reset_screen_browser()
@@ -842,6 +850,7 @@ namespace HuxApp
     {
         if (m_internal->m_screen_browser_state == ScreenBrowserState::SCREEN_LIST)
         {
+            m_internal->update_screen_browser_buttons();
             screen_selected(item);
         }
     }

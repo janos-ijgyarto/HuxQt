@@ -413,11 +413,13 @@ namespace HuxApp
             if (m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
             {
                 m_ui.add_terminal_button->setEnabled(true);
+                m_ui.import_level_script_button->setEnabled(true);
                 m_ui.remove_terminal_button->setEnabled(!get_selected_terminals().isEmpty());
             }
             else
             {
                 m_ui.add_terminal_button->setEnabled(false);
+                m_ui.import_level_script_button->setEnabled(false);
                 m_ui.remove_terminal_button->setEnabled(false);
             }
         }
@@ -492,8 +494,6 @@ namespace HuxApp
                 }
                 finished_group_item->setExpanded(true);
             }
-
-            update_scenario_buttons();
         }
 
         void terminal_node_double_clicked(AppCore& core, QListWidgetItem* item)
@@ -729,6 +729,7 @@ namespace HuxApp
         m_internal->m_ui.scenario_up_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_FileDialogToParent));
 
         m_internal->m_ui.add_terminal_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_FileIcon));
+        m_internal->m_ui.import_level_script_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_DialogOpenButton));
         m_internal->m_ui.remove_terminal_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_TrashIcon));
 
         m_internal->m_ui.terminal_first_button->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_MediaSkipBackward));
@@ -764,6 +765,7 @@ namespace HuxApp
 
         // Browser buttons
         connect(m_internal->m_ui.add_terminal_button, &QPushButton::clicked, this, &HuxQt::add_terminal_clicked);
+        connect(m_internal->m_ui.import_level_script_button, &QPushButton::clicked, this, &HuxQt::import_level_script);
         connect(m_internal->m_ui.remove_terminal_button, &QPushButton::clicked, this, &HuxQt::remove_terminal_clicked);
 
         // Preview buttons
@@ -863,9 +865,9 @@ namespace HuxApp
 
     void HuxQt::scenario_item_clicked(QListWidgetItem* item)
     {
-        m_internal->update_scenario_buttons();
         if (m_internal->m_scenario_browser_state == ScenarioBrowserState::TERMINALS)
         {
+            m_internal->update_scenario_buttons();
             if (item->isSelected())
             {
                 const int terminal_index = m_internal->get_terminal_index(item);
@@ -1044,15 +1046,47 @@ namespace HuxApp
         Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
         ScenarioManager::add_level_terminal(m_internal->m_scenario, selected_level);
 
-        // Add the new terminal to the tree
-        const Terminal& new_terminal = selected_level.get_terminals().back();
-        QListWidgetItem* new_terminal_item = new QListWidgetItem(m_internal->m_ui.scenario_browser_view);
-
         // Reset view to include the new item
         m_internal->reset_scenario_browser_view();
-        m_internal->m_ui.scenario_browser_view->setCurrentRow(m_internal->m_ui.scenario_browser_view->count() - 1);
 
+        // Set the new item to be selected
+        QListWidgetItem* new_terminal_item = m_internal->m_ui.scenario_browser_view->item(m_internal->m_ui.scenario_browser_view->count() - 1);
+        new_terminal_item->setSelected(true);
         m_internal->scenario_edited();
+    }
+
+    void HuxQt::import_level_script()
+    {
+        const QString level_file = QFileDialog::getOpenFileName(this, tr("Open Level Script"), "/home", "Level Scripts (*.txt)");
+        if (!level_file.isEmpty())
+        {
+            Level& selected_level = m_internal->m_scenario.get_level(m_internal->m_current_level_index);
+            const int prev_terminal_count = selected_level.get_terminals().size();
+
+            if (ScenarioManager::import_level_terminals(m_internal->m_scenario, selected_level, level_file))
+            {
+                const int new_terminal_count = selected_level.get_terminals().size();
+                const int added_terminal_count = new_terminal_count - prev_terminal_count;
+                if (added_terminal_count > 0)
+                {
+                    // Reset view to include the new items
+                    m_internal->reset_scenario_browser_view();
+
+                    // Set the new items to be selected
+                    for (int new_item_index = new_terminal_count - new_terminal_count; new_item_index < new_terminal_count; ++new_item_index)
+                    {
+                        QListWidgetItem* new_terminal_item = m_internal->m_ui.scenario_browser_view->item(new_item_index);
+                        new_terminal_item->setSelected(true);
+                    }
+
+                    m_internal->scenario_edited();
+                }
+            }
+            else
+            {
+                QMessageBox::warning(this, "Scenario Editor Error", QStringLiteral("Error loading level \"%1\"!").arg(level_file));
+            }
+        }
     }
 
     void HuxQt::remove_terminal_clicked()

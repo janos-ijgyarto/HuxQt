@@ -298,10 +298,10 @@ namespace HuxApp
 				}
 				level_file.close();
 
-				// Make sure what we parsed was valid
+				// Make sure what we parsed was valid, and that we parsed anything to begin with
 				if (m_state == ParserState::NONE)
 				{
-					return true;
+					return m_valid_file;
 				}
 			}
 
@@ -366,6 +366,7 @@ namespace HuxApp
 					case ScriptKeywords::TERMINAL:
 					{
 						// Terminal section, start parsing
+						m_valid_file = true;
 						m_state = ParserState::TERMINAL;
 						return;
 					}
@@ -592,6 +593,8 @@ namespace HuxApp
 
 		Level& m_level;
 		ParserState m_state = ParserState::NONE;
+		bool m_valid_file = false;
+
 		QTextStream m_file_stream;
 		QString m_current_line;
 		ScriptKeywords m_current_line_type = ScriptKeywords::KEYWORD_COUNT;
@@ -738,6 +741,26 @@ namespace HuxApp
 		}
 
 		return true;
+	}
+
+	bool ScenarioManager::import_level_terminals(Scenario& scenario, Level& destination_level, const QString& level_script_path)
+	{
+		const QFileInfo level_script_file(level_script_path);
+		Level temp_level;
+		ScriptParser parser(temp_level);
+		if (parser.parse_level(level_script_file))
+		{
+			// Level successfully parsed, assign terminal IDs (used by the UI)
+			for (Terminal& current_terminal : temp_level.m_terminals)
+			{
+				current_terminal.m_id = scenario.m_terminal_id_counter++;
+				current_terminal.set_modified(true);
+				destination_level.m_terminals.push_back(current_terminal);
+			}
+			destination_level.set_modified();
+			return true;
+		}
+		return false;
 	}
 
 	QString ScenarioManager::print_level_script(const Level& level) const

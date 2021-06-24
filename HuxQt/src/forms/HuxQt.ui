@@ -96,6 +96,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="import_level_script_button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="remove_terminal_button">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -318,16 +331,6 @@
   <action name="action_open_scenario">
    <property name="text">
     <string>Open Scenario</string>
-   </property>
-  </action>
-  <action name="action_undo">
-   <property name="text">
-    <string>Undo</string>
-   </property>
-  </action>
-  <action name="action_redo">
-   <property name="text">
-    <string>Redo</string>
    </property>
   </action>
   <action name="action_terminal_preview_config">
