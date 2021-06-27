@@ -8,7 +8,6 @@ namespace HuxApp
 	{
 	public:
 		const QString& get_name() const { return m_name; }
-		const QString& get_merge_folder_path() const { return m_merge_folder_path; }
 
 		Level& get_level(int index) { return m_levels[index]; }
 		std::vector<Level>& get_levels() { return m_levels; }
@@ -23,7 +22,6 @@ namespace HuxApp
 		void reset();
 	private:
 		QString m_name;
-		QString m_merge_folder_path;
 		std::vector<Level> m_levels;
 		int m_terminal_id_counter = 0;
 		bool m_modified = false;

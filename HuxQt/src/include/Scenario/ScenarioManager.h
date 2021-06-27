@@ -33,8 +33,10 @@ namespace HuxApp
 
 		~ScenarioManager();
 
-		bool save_scenario(const QString& path, const Scenario& scenario, bool modified_only = true);
-		bool load_scenario(const QString& path, Scenario& scenario);
+		bool save_scenario(const QString& file_path, const Scenario& scenario); // Save to Hux-specific file
+		bool export_scenario(const QString& split_folder_path, const Scenario& scenario); // Export to split folder
+		bool load_scenario(const QString& file_path, Scenario& scenario); // Load from Hux-specific file
+		bool import_scenario(const QString& split_folder_path, Scenario& scenario); // Import from split folder
 
 		static bool import_level_terminals(Scenario& scenario, Level& destination_level, const QString& level_script_path);
 
@@ -47,7 +49,7 @@ namespace HuxApp
 		static QString convert_ao_to_html(const QString& ao_text);
 		static QString export_hux_formatted_text(const QString& formatted_text);
 
-		static QStringList gather_additional_levels(const Scenario& scenario);
+		static QStringList gather_additional_levels(const Scenario& scenario, const QString& split_folder_path);
 		static bool add_scenario_level(Scenario& scenario, const QString& level_dir_name);
 		static bool delete_scenario_level_script(Scenario& scenario, size_t level_index);
 		static void remove_scenario_level(Scenario& scenario, size_t level_index);
@@ -67,6 +69,7 @@ namespace HuxApp
 		std::unique_ptr<Terminal> m_screen_clipboard;
 
 		class ScriptParser;
+		class ScriptJSONSerializer;
 		friend AppCore;
 	};
 }

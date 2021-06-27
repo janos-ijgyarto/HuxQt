@@ -8,7 +8,10 @@ namespace HuxApp
 	{
 		Q_OBJECT
 	public:
-		ExportScenarioDialog(QWidget* parent, const QStringList& level_output_list);
+		ExportScenarioDialog(QWidget* parent, const QString& init_path, const QStringList& level_output_list);
+
+	signals:
+		void export_path_selected(const QString& path);
 	private:
 		void init_ui(const QStringList& level_output_list);
 		void connect_signals();
@@ -18,5 +21,6 @@ namespace HuxApp
 		void level_script_tab_closed(int index);
 
 		Ui::ExportScenarioDialog m_ui;
+		QString m_init_path;
 	};
 }

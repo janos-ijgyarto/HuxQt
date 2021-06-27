@@ -58,6 +58,8 @@ namespace HuxApp
         Ui::HuxQtMainWindow m_ui;
 
         Scenario m_scenario;
+        QString m_scenario_file_name;
+        QString m_scenario_path;
 
         ScenarioBrowserState m_scenario_browser_state = ScenarioBrowserState::LEVELS;
         int m_current_level_index = -1;
@@ -678,7 +680,8 @@ namespace HuxApp
 
     bool HuxQt::add_level(const QString& level_name, const QString& level_dir_name)
     {
-        if (ScenarioManager::add_scenario_level(m_internal->m_scenario, level_dir_name))
+        // FIXME: this needs to be implemented properly
+        /*if (ScenarioManager::add_scenario_level(m_internal->m_scenario, level_dir_name))
         {
             if (m_internal->m_scenario_browser_state == ScenarioBrowserState::LEVELS)
             {
@@ -691,7 +694,8 @@ namespace HuxApp
         {
             QMessageBox::warning(this, "Scenario Editor Error", QStringLiteral("Error loading level \"%1\"!").arg(level_name));
             return false;
-        }
+        }*/
+        return true;
     }
 
     void HuxQt::closeEvent(QCloseEvent* event)
@@ -709,6 +713,7 @@ namespace HuxApp
     void HuxQt::init_ui()
     {
         m_internal->m_ui.action_save_scenario->setEnabled(false);
+        m_internal->m_ui.action_save_scenario_as->setEnabled(false);
         m_internal->m_ui.action_export_scenario_scripts->setEnabled(false);
         m_internal->m_ui.scenario_up_button->setEnabled(false);
         
@@ -747,8 +752,12 @@ namespace HuxApp
     {
         // Menu
         connect(m_internal->m_ui.action_open_scenario, &QAction::triggered, this, &HuxQt::open_scenario);
+
         connect(m_internal->m_ui.action_save_scenario, &QAction::triggered, this, &HuxQt::save_scenario_action);
+        connect(m_internal->m_ui.action_save_scenario_as, &QAction::triggered, this, &HuxQt::save_scenario_as_action);
+
         connect(m_internal->m_ui.action_export_scenario_scripts, &QAction::triggered, this, &HuxQt::export_scenario_scripts);
+        connect(m_internal->m_ui.action_import_scenario_scripts, &QAction::triggered, this, &HuxQt::import_scenario_scripts);
         connect(m_internal->m_ui.action_terminal_preview_config, &QAction::triggered, this, &HuxQt::open_preview_config);
 
         // Scenario browser
@@ -789,8 +798,9 @@ namespace HuxApp
 
     void HuxQt::open_scenario()
     {
-        QString scenario_dir = QFileDialog::getExistingDirectory(this, tr("Open Scenario Split Folder"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-        if (!scenario_dir.isEmpty())
+        const QString init_path = m_internal->m_scenario_path.isEmpty() ? QStringLiteral("/home") : (m_internal->m_scenario_path + "/Scenario.json");
+        const QString scenario_file = QFileDialog::getOpenFileName(this, tr("Open Scenario File"), init_path, "Scenario File (*.json)");
+        if (!scenario_file.isEmpty())
         {
             if (!close_current_scenario())
             {
@@ -800,19 +810,38 @@ namespace HuxApp
 
             m_internal->clear_terminal_editors();
 
-            if(m_core->get_scenario_manager().load_scenario(scenario_dir, m_internal->m_scenario))
+            if (m_core->get_scenario_manager().load_scenario(scenario_file, m_internal->m_scenario))
             {
+                // Load successful
                 m_internal->m_ui.action_save_scenario->setEnabled(true);
+                m_internal->m_ui.action_save_scenario_as->setEnabled(true);
                 m_internal->m_ui.action_export_scenario_scripts->setEnabled(true);
                 reset_ui();
-                
+
                 // Update the display system
-                m_core->get_display_system().update_resources(scenario_dir + "/Resources");
+                QFileInfo scenario_file_info(scenario_file);
+                m_core->get_display_system().update_resources(scenario_file_info.absolutePath() + "/Resources");
+
+                // Cache the scenario path
+                m_internal->m_scenario_path = scenario_file_info.absolutePath();
+                m_internal->m_scenario_file_name = scenario_file_info.fileName();
             }
         }
     }
 
     void HuxQt::save_scenario_action()
+    {
+        // Save using the existing 
+        save_scenario(m_internal->m_scenario_file_name);
+    }
+
+    void HuxQt::save_scenario_as_action()
+    {
+        // Use empty string (will prompt user to select a file)
+        save_scenario(QString());
+    }
+
+    void HuxQt::export_scenario_scripts()
     {
         // Prepare the export dialog (allows one last check to make sure the scripts we will output are correct, also helps with debugging)
         QStringList level_output_list;
@@ -823,23 +852,39 @@ namespace HuxApp
             level_output_list << scenario_manager.print_level_script(current_level);
         }
 
-        ExportScenarioDialog* export_dialog = new ExportScenarioDialog(this, level_output_list);
-        connect(export_dialog, &QDialog::accepted, this, &HuxQt::save_scenario);
+        ExportScenarioDialog* export_dialog = new ExportScenarioDialog(this, m_internal->m_scenario_path, level_output_list);
+        connect(export_dialog, &ExportScenarioDialog::export_path_selected, this, &HuxQt::export_scenario);
         export_dialog->open();
     }
 
-    void HuxQt::export_scenario_scripts()
+    void HuxQt::import_scenario_scripts()
     {
-        QString export_dir_path = QFileDialog::getExistingDirectory(this, tr("Select Export Folder"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-        if(!export_dir_path.isEmpty())
+        const QString scenario_dir = QFileDialog::getExistingDirectory(this, tr("Import Scenario Split Folder"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+        if (!scenario_dir.isEmpty())
         {
-            if (QDir(export_dir_path).isEmpty())
+            if (!close_current_scenario())
             {
-                m_core->get_scenario_manager().save_scenario(export_dir_path, m_internal->m_scenario, false);
+                // Something went wrong, cancel this request
+                return;
             }
-            else
+
+            // Clear the UI
+            m_internal->clear_terminal_editors();
+
+            if (m_core->get_scenario_manager().import_scenario(scenario_dir, m_internal->m_scenario))
             {
-                QMessageBox::warning(this, "Scenario Export Error", "Export folder must be empty!");
+                // Import successful, update the UI
+                m_internal->m_ui.action_save_scenario->setEnabled(true);
+                m_internal->m_ui.action_save_scenario_as->setEnabled(true);
+                m_internal->m_ui.action_export_scenario_scripts->setEnabled(true);
+                reset_ui();
+
+                // Update the display system
+                m_core->get_display_system().update_resources(scenario_dir + "/Resources");
+
+                // Cache the scenario path
+                m_internal->m_scenario_path = scenario_dir;
+                m_internal->m_scenario_file_name.clear();
             }
         }
     }
@@ -958,7 +1003,8 @@ namespace HuxApp
 
     void HuxQt::add_level_action()
     {
-        QStringList available_levels = ScenarioManager::gather_additional_levels(m_internal->m_scenario);
+        // FIXME: implement this correctly!
+        /*QStringList available_levels = ScenarioManager::gather_additional_levels(m_internal->m_scenario);
         if (!available_levels.isEmpty())
         {
             AddLevelDialog* add_level_dialog = new AddLevelDialog(this, available_levels);
@@ -967,7 +1013,7 @@ namespace HuxApp
         else
         {
             QMessageBox::warning(this, "Scenario Editor Error", "The current scenario contains no additional levels!");
-        }
+        }*/
     }
 
     void HuxQt::remove_level_action()
@@ -1240,7 +1286,7 @@ namespace HuxApp
             switch (user_response)
             {
             case QMessageBox::Yes:
-                return save_scenario();
+                return save_scenario(m_internal->m_scenario_file_name);
             case QMessageBox::No:
                 return true;
             case QMessageBox::Cancel:
@@ -1251,16 +1297,48 @@ namespace HuxApp
         return true;
     }
 
-    bool HuxQt::save_scenario()
+    bool HuxQt::save_scenario(const QString& file_name)
     {
+        // Check if there is a selected save file (if not, prompt user)
+        QFileInfo file_info(m_internal->m_scenario_path + "/" + file_name);
+        if (file_name.isEmpty())
+        {
+            const QString init_path = m_internal->m_scenario_path + (m_internal->m_scenario_file_name.isEmpty() ? "/Scenario.json" : QStringLiteral("/%1").arg(m_internal->m_scenario_file_name));
+            const QString selected_file_path = QFileDialog::getSaveFileName(this, tr("Save Scenario As"), init_path, "Scenario File (*.json)");
+
+            if (!selected_file_path.isEmpty())
+            {
+                file_info = QFileInfo(selected_file_path);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         ScenarioManager& scenario_manager = m_core->get_scenario_manager();
-        if (!scenario_manager.save_scenario(m_internal->m_scenario.get_merge_folder_path(), m_internal->m_scenario))
+        if (!scenario_manager.save_scenario(file_info.absoluteFilePath(), m_internal->m_scenario))
         {
             return false;
         }
 
+        // Save successful, cache the file location
+        m_internal->m_scenario_path = file_info.absoluteDir().absolutePath();
+        m_internal->m_scenario_file_name = file_info.fileName();
+
         // Clear all the UI modifications
         m_internal->clear_scenario_edited();
+        return true;
+    }
+
+    bool HuxQt::export_scenario(const QString& export_path)
+    {
+        ScenarioManager& scenario_manager = m_core->get_scenario_manager();
+        if (!scenario_manager.export_scenario(export_path, m_internal->m_scenario))
+        {
+            return false;
+        }
+
         return true;
     }
 }

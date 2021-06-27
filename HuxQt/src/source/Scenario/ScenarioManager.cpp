@@ -8,6 +8,8 @@
 
 #include "Utils/Utilities.h"
 
+#include <QJsonDocument>
+
 namespace HuxApp
 {
 	namespace
@@ -266,7 +268,7 @@ namespace HuxApp
 				terminal_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::INTRALEVEL_TELEPORT), QString::number(teleport_info.m_index));
 				break;
 			}
-		}
+		}		
 	}
 
 	class ScenarioManager::ScriptParser
@@ -296,7 +298,6 @@ namespace HuxApp
 						return false;
 					}
 				}
-				level_file.close();
 
 				// Make sure what we parsed was valid, and that we parsed anything to begin with
 				if (m_state == ParserState::NONE)
@@ -601,6 +602,139 @@ namespace HuxApp
 		QString m_comment_buffer;
 	};
 
+	class ScenarioManager::ScriptJSONSerializer
+	{
+	public:
+		static void serialize_teleport_info(const Terminal::Teleport& teleport, QJsonObject& teleport_json)
+		{
+			teleport_json["TYPE"] = Utils::to_integral(teleport.m_type);
+			teleport_json["INDEX"] = teleport.m_index;
+		}
+
+		static void serialize_screen_json(const Terminal::Screen& screen, QJsonObject& screen_json)
+		{
+			screen_json["TYPE"] = Utils::to_integral(screen.m_type);
+			screen_json["ALIGNMENT"] = Utils::to_integral(screen.m_alignment);
+			screen_json["RESOURCE_ID"] = screen.m_resource_id;
+			screen_json["SCRIPT"] = screen.m_script;
+		}
+
+		static void serialize_terminal_json(const Terminal& terminal, QJsonObject& terminal_json)
+		{
+			// Unfinished data
+			{
+				QJsonArray unfinished_screens_array;
+				for (const Terminal::Screen& current_screen : terminal.m_unfinished_screens)
+				{
+					QJsonObject current_screen_json;
+					serialize_screen_json(current_screen, current_screen_json);
+					unfinished_screens_array.append(current_screen_json);
+				}
+				terminal_json["UNFINISHED_SCREENS"] = unfinished_screens_array;
+
+				QJsonObject unfinished_teleport_json;
+				serialize_teleport_info(terminal.m_unfinished_teleport, unfinished_teleport_json);
+				terminal_json["UNFINISHED_TELEPORT"] = unfinished_teleport_json;
+			}
+
+			// Finished data
+			{
+				QJsonArray finished_screens_array;
+				for (const Terminal::Screen& current_screen : terminal.m_finished_screens)
+				{
+					QJsonObject current_screen_json;
+					serialize_screen_json(current_screen, current_screen_json);
+					finished_screens_array.append(current_screen_json);
+				}
+				terminal_json["FINISHED_SCREENS"] = finished_screens_array;
+
+				QJsonObject finished_teleport_json;
+				serialize_teleport_info(terminal.m_finished_teleport, finished_teleport_json);
+				terminal_json["FINISHED_TELEPORT"] = finished_teleport_json;
+			}
+		}
+
+		static void serialize_level_json(const Level& level, QJsonObject& level_json)
+		{
+			level_json["NAME"] = level.get_name();
+			level_json["DIR_NAME"] = level.get_level_dir_name();
+			level_json["SCRIPT_NAME"] = level.get_level_script_name();
+
+			QJsonArray terminal_array;
+			for (const Terminal& current_terminal : level.get_terminals())
+			{
+				QJsonObject current_terminal_json;
+				serialize_terminal_json(current_terminal, current_terminal_json);
+				terminal_array.append(current_terminal_json);
+			}
+
+			level_json["TERMINALS"] = terminal_array;
+		}
+
+		static void deserialize_teleport_info(const QJsonObject& teleport_json, Terminal::Teleport& teleport)
+		{
+			teleport.m_type = Utils::to_enum<Terminal::TeleportType>(teleport_json["TYPE"].toInt());
+			teleport.m_index = teleport_json["INDEX"].toInt();
+		}
+
+		static void deserialize_screen_json(const QJsonObject& screen_json, Terminal::Screen& screen)
+		{
+			screen.m_type = Utils::to_enum<Terminal::ScreenType>(screen_json["TYPE"].toInt());
+			screen.m_alignment = Utils::to_enum<Terminal::ScreenAlignment>(screen_json["ALIGNMENT"].toInt());
+			screen.m_resource_id = screen_json["RESOURCE_ID"].toInt();
+			screen.m_script = screen_json["SCRIPT"].toString();
+		}
+
+		static void deserialize_terminal_json(const QJsonObject& terminal_json, Terminal& terminal)
+		{
+			// Unfinished data
+			{
+				const QJsonArray unfinished_screens_array = terminal_json["UNFINISHED_SCREENS"].toArray();
+				for (const QJsonValue& current_screen_json_value : unfinished_screens_array)
+				{
+					Terminal::Screen& current_screen = terminal.m_unfinished_screens.emplace_back();
+					const QJsonObject current_screen_json = current_screen_json_value.toObject();
+					deserialize_screen_json(current_screen_json, current_screen);
+				}
+
+				const QJsonObject unfinished_teleport_json = terminal_json["UNFINISHED_TELEPORT"].toObject();
+				deserialize_teleport_info(unfinished_teleport_json, terminal.m_unfinished_teleport);
+			}
+
+			// Finished data
+			{
+				const QJsonArray finished_screens_array = terminal_json["FINISHED_SCREENS"].toArray();
+				for (const QJsonValue& current_screen_json_value : finished_screens_array)
+				{
+					Terminal::Screen& current_screen = terminal.m_finished_screens.emplace_back();
+					const QJsonObject current_screen_json = current_screen_json_value.toObject();
+					deserialize_screen_json(current_screen_json, current_screen);
+				}
+
+				const QJsonObject finished_teleport_json = terminal_json["FINISHED_TELEPORT"].toObject();
+				deserialize_teleport_info(finished_teleport_json, terminal.m_finished_teleport);
+			}
+		}
+
+		static void deserialize_level_json(const QJsonObject& level_json, Scenario& scenario, Level& level)
+		{
+			level.m_name = level_json["NAME"].toString();
+			level.m_level_dir_name = level_json["DIR_NAME"].toString();
+			level.m_level_script_name = level_json["SCRIPT_NAME"].toString();
+
+			const QJsonArray terminal_array = level_json["TERMINALS"].toArray();
+			for (const QJsonValue& current_terminal_value : terminal_array)
+			{
+				Terminal& current_terminal = level.m_terminals.emplace_back();
+				const QJsonObject current_terminal_json = current_terminal_value.toObject();
+				deserialize_terminal_json(current_terminal_json, current_terminal);
+
+				// Terminal has been parsed, assign ID
+				current_terminal.m_id = scenario.m_terminal_id_counter++;
+			}
+		}
+	};
+
 	ScenarioManager::ScenarioManager(AppCore& core) 
 		: m_core(core)
 	{
@@ -661,45 +795,124 @@ namespace HuxApp
 		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
 	}
 
-	bool ScenarioManager::save_scenario(const QString& path, const Scenario& scenario, bool modified_only)
+	bool ScenarioManager::save_scenario(const QString& file_path, const Scenario& scenario)
 	{
+		// Prepare the JSON file
+		QFile scenario_file(file_path);
+		if (!scenario_file.open(QIODevice::WriteOnly))
+		{
+			QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to open file \"%1\"!").arg(file_path));
+			return false;
+		}
+
+		// Create JSON root object
+		QJsonObject scenario_root_json;
+
+		// Serialize the levels
+		QJsonArray levels_json_array;
 		for (const Level& current_level : scenario.m_levels)
 		{
-			// Check if we should only export modified levels
-			if (current_level.m_modified || !modified_only)
-			{
-				// Open a file for each level, create folder if necessary
-				const QString level_dir_path = path + "/" + current_level.get_level_dir_name();
-				QDir level_dir;
-				if (!level_dir.exists(level_dir_path))
-				{
-					if (!level_dir.mkpath(level_dir_path))
-					{
-						QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to save to directory \"%1\"!").arg(level_dir_path));
-						return false;
-					}
-				}
+			QJsonObject current_level_json;
+			ScriptJSONSerializer::serialize_level_json(current_level, current_level_json);
+			levels_json_array.append(current_level_json);
+		}
 
-				const QString level_file_path = level_dir_path + "/" + current_level.get_level_script_name();
-				QFile level_file(level_file_path);
-				if (!level_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-				{
-					QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to save to file \"%1\"!").arg(level_file_path));
-					level_file.close();
-					return false;
-				}
-				export_level_script(level_file, current_level);
-				level_file.close();
-			}
+		// Store the level array
+		scenario_root_json["LEVELS"] = levels_json_array;
+
+		// Write to file
+		if (scenario_file.write(QJsonDocument(scenario_root_json).toJson()) == -1)
+		{
+			QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Error writing to file \"%1\"!").arg(file_path));
+			return false;
 		}
 
 		return true;
 	}
 
-	bool ScenarioManager::load_scenario(const QString& path, Scenario& scenario)
+	bool ScenarioManager::export_scenario(const QString& split_folder_path, const Scenario& scenario)
+	{
+		for (const Level& current_level : scenario.m_levels)
+		{
+			// Open a file for each level, create folder if necessary
+			const QString level_dir_path = split_folder_path + "/" + current_level.get_level_dir_name();
+			QDir level_dir;
+			if (!level_dir.exists(level_dir_path))
+			{
+				if (!level_dir.mkpath(level_dir_path))
+				{
+					QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to save to directory \"%1\"!").arg(level_dir_path));
+					return false;
+				}
+			}
+
+			const QString level_file_path = level_dir_path + "/" + current_level.get_level_script_name();
+			QFile level_file(level_file_path);
+			if (!level_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+			{
+				QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to save to file \"%1\"!").arg(level_file_path));
+				level_file.close();
+				return false;
+			}
+			export_level_script(level_file, current_level);
+		}
+
+		return true;
+	}
+
+	bool ScenarioManager::load_scenario(const QString& file_path, Scenario& scenario)
+	{
+		// First make sure the file exists and is the correct type
+		QFileInfo file_info(file_path);
+		if (!file_info.isFile())
+		{
+			return false;
+		}
+
+		// Open the file
+		QFile scenario_file(file_path);
+		if (!scenario_file.open(QIODevice::ReadOnly))
+		{
+			QMessageBox::warning(m_core.get_main_window(), "File I/O Error", QStringLiteral("Unable to open file \"%1\"!").arg(file_path));
+			return false;
+		}
+
+		// Load the JSON data and parse it
+		QByteArray scenario_file_data = scenario_file.readAll();
+
+		QJsonParseError parse_error;
+		QJsonDocument scenario_json_document = QJsonDocument::fromJson(scenario_file_data, &parse_error);
+		if (parse_error.error != QJsonParseError::NoError)
+		{
+			QMessageBox::warning(m_core.get_main_window(), "Scenario File Error", QStringLiteral("Invalid scenario file! Error: \"%1\"!").arg(parse_error.errorString()));
+			return false;
+		}
+
+		// Parse successful, reset the scenario contents
+		scenario.reset();
+
+		// Load the scenario from the root object
+		const QJsonObject scenario_root_json = scenario_json_document.object();
+		const QJsonArray levels_json_array = scenario_root_json["LEVELS"].toArray();
+		for (const QJsonValue& current_level_value : levels_json_array)
+		{
+			Level& current_level = scenario.m_levels.emplace_back();
+			const QJsonObject current_level_json = current_level_value.toObject();
+			ScriptJSONSerializer::deserialize_level_json(current_level_json, scenario, current_level);
+		}
+
+		QDir file_dir = file_info.absoluteDir();
+		if (!file_dir.cd("Resources"))
+		{
+			QMessageBox::warning(m_core.get_main_window(), "Scenario Warning", QStringLiteral("No Resources folder present for this scenario file! Images will not be available for terminal previews!"));
+		}
+		return true;
+	}
+
+	bool ScenarioManager::import_scenario(const QString& split_folder_path, Scenario& scenario)
 	{
 		QStringList level_dir_list;
-		if (!validate_scenario_folder(path, level_dir_list))
+		if (!validate_scenario_folder(split_folder_path, level_dir_list))
 		{
 			QMessageBox::warning(m_core.get_main_window(), "Scenario Load Error", "The selected folder does not contain a valid Aleph One scenario!");
 			return false;
@@ -708,12 +921,11 @@ namespace HuxApp
 		// Reset the scenario contents
 		scenario.reset();
 
-		scenario.m_name = QDir(path).dirName();
-		scenario.m_merge_folder_path = path;
+		scenario.m_name = QDir(split_folder_path).dirName();
 
 		for (const QString& level_dir_name : level_dir_list)
 		{
-			const QDir current_level_dir(path + "/" + level_dir_name);
+			const QDir current_level_dir(split_folder_path + "/" + level_dir_name);
 			const QFileInfoList file_info_list = current_level_dir.entryInfoList(QDir::Files);
 
 			for (const QFileInfo& current_file : file_info_list)
@@ -893,7 +1105,7 @@ namespace HuxApp
 		return exported_ao_text;
 	}
 
-	QStringList ScenarioManager::gather_additional_levels(const Scenario& scenario)
+	QStringList ScenarioManager::gather_additional_levels(const Scenario& scenario, const QString& split_folder_path)
 	{
 		// Gather a set of the directory names that were already added
 		QSet<QString> existing_levels;
@@ -903,7 +1115,7 @@ namespace HuxApp
 		}
 
 		// Create list of directories in the scenario folder which aren't in the current list of levels
-		QDirIterator dir_it(scenario.m_merge_folder_path, QDir::Dirs | QDir::NoDotAndDotDot);
+		QDirIterator dir_it(split_folder_path, QDir::Dirs | QDir::NoDotAndDotDot);
 		QStringList non_scripted_levels;
 		while (dir_it.hasNext())
 		{
@@ -920,7 +1132,7 @@ namespace HuxApp
 		QStringList available_levels;
 		for (const QString& current_level_name : non_scripted_levels)
 		{
-			const QDir current_level_dir(scenario.m_merge_folder_path + "/" + current_level_name);
+			const QDir current_level_dir(split_folder_path + "/" + current_level_name);
 			const QFileInfoList file_info_list = current_level_dir.entryInfoList(QDir::Files);
 
 			for (const QFileInfo& current_file : file_info_list)
@@ -940,24 +1152,25 @@ namespace HuxApp
 
 	bool ScenarioManager::add_scenario_level(Scenario& scenario, const QString& level_dir_name)
 	{
-		const QDir new_level_dir(scenario.get_merge_folder_path() + "/" + level_dir_name);
-		const QFileInfoList file_info_list = new_level_dir.entryInfoList(QDir::Files);
-		
-		for (const QFileInfo& current_file : file_info_list)
-		{
-			if (current_file.completeSuffix() == "sceA")
-			{
-				// Use the level file name as the name for our terminal script name
-				Level new_level;
-				new_level.m_name = current_file.baseName();
-				new_level.m_level_dir_name = level_dir_name;
-				new_level.m_level_script_name = current_file.baseName() + "term.txt";
+		// FIXME: implement this!
+		//const QDir new_level_dir(scenario.get_merge_folder_path() + "/" + level_dir_name);
+		//const QFileInfoList file_info_list = new_level_dir.entryInfoList(QDir::Files);
+		//
+		//for (const QFileInfo& current_file : file_info_list)
+		//{
+		//	if (current_file.completeSuffix() == "sceA")
+		//	{
+		//		// Use the level file name as the name for our terminal script name
+		//		Level new_level;
+		//		new_level.m_name = current_file.baseName();
+		//		new_level.m_level_dir_name = level_dir_name;
+		//		new_level.m_level_script_name = current_file.baseName() + "term.txt";
 
-				// Add level to the scenario
-				scenario.m_levels.push_back(new_level);
-				return true;
-			}
-		}
+		//		// Add level to the scenario
+		//		scenario.m_levels.push_back(new_level);
+		//		return true;
+		//	}
+		//}
 
 		// Something went wrong
 		return false;
@@ -965,13 +1178,14 @@ namespace HuxApp
 
 	bool ScenarioManager::delete_scenario_level_script(Scenario& scenario, size_t level_index)
 	{
-		const Level& selected_level = scenario.m_levels[level_index];
+		// FIXME: implement this correctly!
+		/*const Level& selected_level = scenario.m_levels[level_index];
 		const QString level_script_path = scenario.get_merge_folder_path() + "/" + selected_level.m_level_dir_name + "/" + selected_level.m_level_script_name;
 
 		if (QFile::exists(level_script_path))
 		{
 			return QFile::remove(level_script_path);
-		}
+		}*/
 		return true;
 	}
 

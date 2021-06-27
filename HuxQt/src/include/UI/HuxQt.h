@@ -29,7 +29,9 @@ namespace HuxApp
         // Menu
         void open_scenario();
         void save_scenario_action();
+        void save_scenario_as_action();
         void export_scenario_scripts();
+        void import_scenario_scripts();
         void open_preview_config();
         void preview_config_closed();
 
@@ -61,7 +63,8 @@ namespace HuxApp
         // Misc.
         void terminal_editor_closed();
         bool close_current_scenario();
-        bool save_scenario();
+        bool save_scenario(const QString& file_name);
+        bool export_scenario(const QString& export_path);
 
         struct Internal;
         std::unique_ptr<Internal> m_internal;

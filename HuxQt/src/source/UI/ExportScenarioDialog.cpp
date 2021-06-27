@@ -5,8 +5,9 @@
 
 namespace HuxApp
 {
-	ExportScenarioDialog::ExportScenarioDialog(QWidget* parent, const QStringList& level_output_list)
+	ExportScenarioDialog::ExportScenarioDialog(QWidget* parent, const QString& init_path, const QStringList& level_output_list)
 		: QDialog(parent)
+		, m_init_path(init_path)
 	{
 		m_ui.setupUi(this);
 		setAttribute(Qt::WA_DeleteOnClose, true);
@@ -39,7 +40,13 @@ namespace HuxApp
 
 	void ExportScenarioDialog::ok_clicked()
 	{
-		QDialog::accept();
+		QString export_dir_path = QFileDialog::getExistingDirectory(this, tr("Select Export Folder"), m_init_path, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+		if (!export_dir_path.isEmpty())
+		{
+			// Notify the main window of the selected export path
+			emit(export_path_selected(export_dir_path));
+			QDialog::accept();
+		}
 	}
 
 	void ExportScenarioDialog::level_item_double_clicked(QListWidgetItem* level_item)
