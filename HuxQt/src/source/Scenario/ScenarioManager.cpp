@@ -685,6 +685,9 @@ namespace HuxApp
 			screen.m_alignment = Utils::to_enum<Terminal::ScreenAlignment>(screen_json["ALIGNMENT"].toInt());
 			screen.m_resource_id = screen_json["RESOURCE_ID"].toInt();
 			screen.m_script = screen_json["SCRIPT"].toString();
+
+			// Have to parse the script to get the display text
+			screen.m_display_text = convert_ao_to_html(screen.m_script);
 		}
 
 		static void deserialize_terminal_json(const QJsonObject& terminal_json, Terminal& terminal)
@@ -894,6 +897,9 @@ namespace HuxApp
 
 		// Parse successful, reset the scenario contents
 		scenario.reset();
+
+		// Use the file name as the scenario name
+		scenario.m_name = file_info.baseName();
 
 		// Load the scenario from the root object
 		const QJsonObject scenario_root_json = scenario_json_document.object();

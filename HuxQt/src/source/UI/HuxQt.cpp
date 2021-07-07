@@ -839,7 +839,7 @@ namespace HuxApp
 
     void HuxQt::save_scenario_action()
     {
-        // Save using the existing 
+        // Save using the cached file name (equivalent to "Save As" if we haven't saved the file yet)
         save_scenario(m_internal->m_scenario_file_name);
     }
 
@@ -1311,7 +1311,8 @@ namespace HuxApp
         QFileInfo file_info(m_internal->m_scenario_path + "/" + file_name);
         if (file_name.isEmpty())
         {
-            const QString init_path = m_internal->m_scenario_path + (m_internal->m_scenario_file_name.isEmpty() ? "/Scenario.json" : QStringLiteral("/%1").arg(m_internal->m_scenario_file_name));
+            // Use the scenario name to generate the file path
+            const QString init_path = m_internal->m_scenario_path + QStringLiteral("/%1.json").arg(m_internal->m_scenario.get_name());
             const QString selected_file_path = QFileDialog::getSaveFileName(this, tr("Save Scenario As"), init_path, "Scenario File (*.json)");
 
             if (!selected_file_path.isEmpty())
