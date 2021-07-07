@@ -508,6 +508,7 @@ namespace HuxApp
             m_internal->save_screen_changes();
 
             // Export the terminal changes
+            m_internal->m_terminal_data.set_name(m_internal->m_ui.name_edit->text());
             m_internal->m_screen_data.export_data(m_internal->m_terminal_data);
         }
     }
@@ -554,6 +555,7 @@ namespace HuxApp
         connect(m_internal->m_ui.dialog_button_box, &QDialogButtonBox::accepted, this, &TerminalEditorWindow::ok_clicked);
         connect(m_internal->m_ui.dialog_button_box, &QDialogButtonBox::rejected, this, &TerminalEditorWindow::cancel_clicked);
 
+        connect(m_internal->m_ui.name_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
         connect(m_internal->m_ui.unfinished_teleport_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
         connect(m_internal->m_ui.finished_teleport_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
         connect(m_internal->m_ui.unfinished_teleport_type, QOverload<int>::of(&QComboBox::activated), this, &TerminalEditorWindow::terminal_data_modified);
@@ -608,6 +610,8 @@ namespace HuxApp
 
         m_internal->m_ui.dialog_button_box->button(QDialogButtonBox::StandardButton::Ok)->setEnabled(false);
 
+        m_internal->m_ui.name_edit->setText(m_internal->m_terminal_data.get_name());
+
         // Teleport info
         {
             const Terminal::Teleport& unfinished_teleport = m_internal->m_terminal_data.get_teleport_info(true);
@@ -648,14 +652,23 @@ namespace HuxApp
 
     void TerminalEditorWindow::update_window_title_internal()
     {
-        if (m_internal->m_modified)
+        QString new_title = QStringLiteral("Terminal Editor - ");
+        if (!m_internal->m_terminal_data.get_name().isEmpty())
         {
-            setWindowTitle(QStringLiteral("Terminal Editor - ") + m_internal->m_title + QStringLiteral(" (Modified)"));
+            // Combine the custom title and the AO script title
+            new_title += m_internal->m_terminal_data.get_name() + QStringLiteral(" (%1)").arg(m_internal->m_title);
         }
         else
         {
-            setWindowTitle(QStringLiteral("Terminal Editor - ") + m_internal->m_title);
+            // Just add the AO script title
+            new_title += m_internal->m_title;
         }
+
+        if (m_internal->m_modified)
+        {
+            new_title += QStringLiteral(" (Modified)");
+        }
+        setWindowTitle(new_title);
     }
 
     void TerminalEditorWindow::terminal_data_modified()

@@ -621,6 +621,8 @@ namespace HuxApp
 
 		static void serialize_terminal_json(const Terminal& terminal, QJsonObject& terminal_json)
 		{
+			terminal_json["NAME"] = terminal.m_name;
+
 			// Unfinished data
 			{
 				QJsonArray unfinished_screens_array;
@@ -687,6 +689,8 @@ namespace HuxApp
 
 		static void deserialize_terminal_json(const QJsonObject& terminal_json, Terminal& terminal)
 		{
+			terminal.m_name = terminal_json["NAME"].toString();
+
 			// Unfinished data
 			{
 				const QJsonArray unfinished_screens_array = terminal_json["UNFINISHED_SCREENS"].toArray();

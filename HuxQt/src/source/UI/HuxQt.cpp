@@ -91,7 +91,15 @@ namespace HuxApp
 
         void init_terminal_item(const Terminal& terminal, int terminal_index, QListWidgetItem* terminal_item)
         {
-            terminal_item->setText(QStringLiteral("TERMINAL %1 (%2)").arg(terminal_index).arg(terminal.get_id()));
+            if (!terminal.get_name().isEmpty())
+            {
+                terminal_item->setText(terminal.get_name());
+            }
+            else
+            {
+                // Use a default name
+                terminal_item->setText(QStringLiteral("TERMINAL %1 (%2)").arg(terminal_index).arg(terminal.get_id()));
+            }
             terminal_item->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_ComputerIcon));
             terminal_item->setData(Qt::UserRole, terminal.get_id()); // Set ID so we can map between the item and the underlying data
 

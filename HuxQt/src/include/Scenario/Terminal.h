@@ -53,6 +53,9 @@ namespace HuxApp
 		};
 
 		int get_id() const { return m_id; }
+		
+		const QString& get_name() const { return m_name; }
+		void set_name(const QString& name) { m_name = name; }
 
 		bool is_modified() const { return m_modified; }
 		void set_modified(bool modified) { m_modified = modified; }
@@ -70,6 +73,7 @@ namespace HuxApp
 		static QString get_screen_string(const Screen& screen_data);
 	private:
 		int m_id = -1;
+		QString m_name;
 		bool m_modified = false;
 
 		std::vector<Screen> m_unfinished_screens;
