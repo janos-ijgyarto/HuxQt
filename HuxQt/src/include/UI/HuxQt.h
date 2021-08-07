@@ -5,6 +5,8 @@
 namespace HuxApp
 {
     class AppCore;
+    struct TerminalID;
+    class Scenario;
 
     // Main window
     class HuxQt : public QMainWindow
@@ -15,9 +17,6 @@ namespace HuxApp
         ~HuxQt();
 
         QGraphicsView* get_graphics_view();
-        
-        bool add_level(const QString& level_name, const QString& level_dir_name);
-
     protected:
         void closeEvent(QCloseEvent* event) override;
     private:
@@ -35,23 +34,13 @@ namespace HuxApp
         void open_preview_config();
         void preview_config_closed();
 
-        // Tree functions
-        void scenario_item_clicked(QListWidgetItem* item);
-        void scenario_item_double_clicked(QListWidgetItem* item);
-        void scenario_view_context_menu(const QPoint& point);
+        // Scenario browser
+        void edit_level(int level_id);
+        void level_changes_accepted();
+        void terminal_selected(int level_id, int terminal_id);
+        void terminal_opened(int level_id, int terminal_id);
         void screen_item_selected(QTreeWidgetItem* current, QTreeWidgetItem* previous);
-
-        // Scenario Editor
-        void add_level_action();
-        void remove_level_action();
-        void terminal_items_moved();
-        void copy_terminal_action();
-        void paste_terminal_action();
-
-        void scenario_up_clicked();
-        void add_terminal_clicked();
-        void import_level_script();
-        void remove_terminal_clicked();
+        void scenario_modified();
 
         // Terminal preview
         void display_current_screen();
@@ -61,10 +50,11 @@ namespace HuxApp
         void terminal_last_clicked();
 
         // Misc.
-        void terminal_editor_closed();
+        void terminal_editor_closed(QObject* object);
         bool close_current_scenario();
         bool save_scenario(const QString& file_name);
         bool export_scenario(const QString& export_path);
+        void scenario_loaded(const Scenario& scenario, const QString& path);
 
         struct Internal;
         std::unique_ptr<Internal> m_internal;

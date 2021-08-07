@@ -9,21 +9,11 @@ namespace HuxApp
 		const QString& get_name() const { return m_name; }
 		void set_name(const QString& name) { m_name = name; }
 
-		const QString& get_level_dir_name() const { return m_level_dir_name; }
-		void set_level_dir_name(const QString& level_dir_name) { m_level_dir_name = level_dir_name; }
+		const QString& get_dir_name() const { return m_dir_name; }
+		void set_dir_name(const QString& dir_name) { m_dir_name = dir_name; }
 
-		const QString& get_level_script_name() const { return m_level_script_name; }
-		
-		bool is_modified() const { return m_modified; }
-		void set_modified() { m_modified = true; }
-		void clear_modified()
-		{
-			for (Terminal& terminal : m_terminals)
-			{
-				terminal.set_modified(false);
-			}
-			m_modified = false;
-		}
+		const QString& get_script_name() const { return m_script_name; }
+		void set_script_name(const QString& script_name) { m_script_name = script_name; }
 
 		Terminal& get_terminal(int index) { return m_terminals[index]; }
 		std::vector<Terminal>& get_terminals() { return m_terminals; }
@@ -31,12 +21,11 @@ namespace HuxApp
 		const Terminal& get_terminal(int index) const { return m_terminals[index]; }
 		const std::vector<Terminal>& get_terminals() const { return m_terminals; }
 
-		int find_terminal(int terminal_id) const;
+		void set_terminals(const std::vector<Terminal>& terminals) { m_terminals = terminals; }
 	private:
 		QString m_name;
-		QString m_level_dir_name;
-		QString m_level_script_name;
-		bool m_modified = false;
+		QString m_dir_name;
+		QString m_script_name;
 
 		std::vector<Terminal> m_terminals;
 		QString m_comments;

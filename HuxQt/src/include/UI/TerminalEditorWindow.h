@@ -4,26 +4,20 @@
 namespace HuxApp
 {
 	class AppCore;
-	class Terminal;
+	class ScenarioBrowserModel;
+	struct TerminalID;
 
 	class TerminalEditorWindow : public QWidget
 	{
 		Q_OBJECT
 	public:
-		TerminalEditorWindow(AppCore& core, int level_index, const Terminal& terminal_data, const QString& title);
+		TerminalEditorWindow(AppCore& core, ScenarioBrowserModel& model, const TerminalID& terminal_id);
 		~TerminalEditorWindow();
 
-		int get_level_index() const;
-		const Terminal& get_terminal_data() const;
+		const TerminalID& get_terminal_id() const;
 
-		bool is_modified() const;
-		void clear_modified();
-
-		bool validate_terminal_info();
-		void update_window_title(const QString& title);
-		void save_changes();
-	signals:
-		void editor_closed();
+		QMessageBox::StandardButton prompt_save();
+		void force_save();
 	protected:
 		void closeEvent(QCloseEvent* event) override;
 	private:
@@ -31,12 +25,12 @@ namespace HuxApp
 		void init_ui();
 		void init_terminal_info();
 		void init_screen_editor();
-		void update_window_title_internal();
 
 		void terminal_data_modified();
 		void screen_edited(bool attributes);
 		void update_preview();
 
+		bool validate_terminal_info();
 		bool gather_teleport_info(bool unfinished);
 
 		// Dialog buttons
@@ -59,7 +53,9 @@ namespace HuxApp
 		void add_screen_clicked();
 		void remove_screen_clicked();
 
+		// Misc.
 		void update_edit_notification();
+		void terminals_removed(const QList<int>& terminal_ids);
 
 		AppCore& m_core;
 

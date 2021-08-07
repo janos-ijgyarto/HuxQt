@@ -110,24 +110,26 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <QtUic Include="src\forms\AddLevelDialog.ui" />
+    <QtUic Include="src\forms\EditLevelDialog.ui" />
     <QtUic Include="src\forms\BrowsePictDialog.ui" />
     <QtUic Include="src\forms\ExportScenarioDialog.ui" />
     <QtUic Include="src\forms\HuxQt.ui" />
     <QtUic Include="src\forms\PreviewConfigWindow.ui" />
     <QtUic Include="src\forms\ScreenEditWidget.ui" />
     <QtUic Include="src\forms\TerminalEditorWindow.ui" />
+    <QtUic Include="src\source\UI\ScenarioBrowserView.ui" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\AppCore.h" />
     <ClInclude Include="src\include\resource.h" />
     <ClInclude Include="src\include\Scenario\Level.h" />
     <ClInclude Include="src\include\Scenario\Scenario.h" />
+    <QtMoc Include="src\include\Scenario\ScenarioBrowserModel.h" />
     <ClInclude Include="src\include\Scenario\ScenarioManager.h" />
     <ClInclude Include="src\include\Scenario\Terminal.h" />
     <ClInclude Include="src\include\stdafx.h" />
     <QtMoc Include="src\include\UI\BrowsePictDialog.h" />
-    <QtMoc Include="src\include\UI\AddLevelDialog.h" />
+    <QtMoc Include="src\include\UI\EditLevelDialog.h" />
     <ClInclude Include="src\include\UI\DisplayData.h" />
     <ClInclude Include="src\include\UI\DisplaySystem.h" />
     <QtMoc Include="src\include\UI\PreviewConfigWindow.h" />
@@ -135,6 +137,7 @@
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h" />
     <QtMoc Include="src\include\UI\TerminalEditorWindow.h" />
     <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h" />
+    <QtMoc Include="src\include\UI\ScenarioBrowserView.h" />
     <ClInclude Include="src\include\Utils\Utilities.h" />
     <QtMoc Include="src\include\UI\HuxQt.h" />
   </ItemGroup>
@@ -143,18 +146,25 @@
     <ClCompile Include="src\source\main.cpp" />
     <ClCompile Include="src\source\Scenario\Level.cpp" />
     <ClCompile Include="src\source\Scenario\Scenario.cpp" />
+    <ClCompile Include="src\source\Scenario\ScenarioBrowserModel.cpp">
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|x64'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
+    </ClCompile>
     <ClCompile Include="src\source\Scenario\ScenarioManager.cpp" />
     <ClCompile Include="src\source\Scenario\Terminal.cpp" />
     <ClCompile Include="src\source\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\source\UI\AddLevelDialog.cpp" />
+    <ClCompile Include="src\source\UI\EditLevelDialog.cpp" />
     <ClCompile Include="src\source\UI\BrowsePictDialog.cpp" />
     <ClCompile Include="src\source\UI\DisplaySystem.cpp" />
     <ClCompile Include="src\source\UI\ExportScenarioDialog.cpp" />
     <ClCompile Include="src\source\UI\HuxQt.cpp" />
     <ClCompile Include="src\source\UI\PreviewConfigWindow.cpp" />
+    <ClCompile Include="src\source\UI\ScenarioBrowserView.cpp" />
     <ClCompile Include="src\source\UI\ScreenEditWidget.cpp" />
     <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp" />
     <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp" />

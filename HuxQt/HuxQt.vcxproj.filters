@@ -54,13 +54,16 @@
     <QtUic Include="src\forms\ScreenEditWidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="src\forms\AddLevelDialog.ui">
+    <QtUic Include="src\forms\EditLevelDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="src\forms\ExportScenarioDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="src\forms\TerminalEditorWindow.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="src\source\UI\ScenarioBrowserView.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
@@ -109,7 +112,7 @@
     <QtMoc Include="src\include\UI\ScreenEditWidget.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
-    <QtMoc Include="src\include\UI\AddLevelDialog.h">
+    <QtMoc Include="src\include\UI\EditLevelDialog.h">
       <Filter>Header Files\UI</Filter>
     </QtMoc>
     <QtMoc Include="src\include\UI\ExportScenarioDialog.h">
@@ -120,6 +123,12 @@
     </QtMoc>
     <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h">
       <Filter>Header Files\Utils</Filter>
+    </QtMoc>
+    <QtMoc Include="src\include\UI\ScenarioBrowserView.h">
+      <Filter>Header Files\UI</Filter>
+    </QtMoc>
+    <QtMoc Include="src\include\Scenario\ScenarioBrowserModel.h">
+      <Filter>Header Files\Scenario</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -156,7 +165,7 @@
     <ClCompile Include="src\source\UI\ScreenEditWidget.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
-    <ClCompile Include="src\source\UI\AddLevelDialog.cpp">
+    <ClCompile Include="src\source\UI\EditLevelDialog.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="src\source\UI\ExportScenarioDialog.cpp">
@@ -170,6 +179,12 @@
     </ClCompile>
     <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp">
       <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\UI\ScenarioBrowserView.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\Scenario\ScenarioBrowserModel.cpp">
+      <Filter>Source Files\Scenario</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

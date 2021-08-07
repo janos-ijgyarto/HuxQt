@@ -3,8 +3,7 @@
 #include <ui_TerminalEditorWindow.h>
 
 #include <AppCore.h>
-#include <Scenario/Terminal.h>
-#include <Scenario/ScenarioManager.h>
+#include <Scenario/ScenarioBrowserModel.h>
 
 #include <UI/DisplaySystem.h>
 #include <UI/DisplayData.h>
@@ -233,9 +232,9 @@ namespace HuxApp
 	{
         Ui::TerminalEditorWindow m_ui;
 
-        const int m_level_index; // Pointer to the tree widget item in the scenario browser
+        ScenarioBrowserModel& m_model;
+        const TerminalID m_terminal_id;
         Terminal m_terminal_data;
-        QString m_title;
 
         DisplaySystem::ViewID m_view_id;
 
@@ -249,16 +248,20 @@ namespace HuxApp
 
         // Flags
         bool m_modified = false;
-        bool m_saved = false;
 
         // Timer that updates the UI after an edit (delays the full update so we don't change the display immediately on every slight change)
         QTimer m_edit_timer;
 
-		Internal(int level_index, const Terminal& terminal_data, const QString& title)
-			: m_level_index(level_index)
-            , m_terminal_data(terminal_data)
-            , m_title(title)
-		{}
+		Internal(const TerminalID& terminal_id, ScenarioBrowserModel& model)
+			: m_model(model)
+            , m_terminal_id(terminal_id)
+		{
+            LevelModel* selected_level = model.get_level_model(terminal_id.m_level_id);
+            if (const Terminal* selected_terminal = selected_level->get_terminal(terminal_id))
+            {
+                m_terminal_data = *selected_terminal;
+            }
+        }
 
         void init_screen_group_item(QListWidgetItem* screen_group_item, const ScreenGroup& group, bool unfinished)
         {
@@ -448,17 +451,37 @@ namespace HuxApp
             m_ui.screen_update_progress_bar->setValue(0);
             m_ui.screen_update_progress_bar->setVisible(false);
         }
+
+        void save_changes()
+        {
+            if (m_modified)
+            {
+                save_screen_changes();
+
+                // Export the terminal changes
+                m_terminal_data.set_name(m_ui.name_edit->text());
+                m_screen_data.export_data(m_terminal_data);
+
+                m_model.update_terminal_data(m_terminal_id, m_terminal_data);
+
+                m_modified = false;
+            }
+        }
 	};
 
-	TerminalEditorWindow::TerminalEditorWindow(AppCore& core, int level_index, const Terminal& terminal_data, const QString& title)
+	TerminalEditorWindow::TerminalEditorWindow(AppCore& core, ScenarioBrowserModel& model, const TerminalID& terminal_id)
 		: m_core(core)
-		, m_internal(std::make_unique<Internal>(level_index, terminal_data, title))
+		, m_internal(std::make_unique<Internal>(terminal_id, model))
 	{
 		m_internal->m_ui.setupUi(this);
+        setAttribute(Qt::WA_DeleteOnClose);
+
+        m_internal->m_ui.screen_edit_widget->initialize(core); // Initialize the screen editor
+
         m_internal->m_edit_timer.stop();
         m_internal->reset_edit_notification();
 
-        m_internal->m_screen_data.init(terminal_data);
+        m_internal->m_screen_data.init(m_internal->m_terminal_data);
 
         init_ui();
         connect_signals();
@@ -470,87 +493,53 @@ namespace HuxApp
         display_system.release_graphics_view(m_internal->m_view_id, m_internal->m_ui.screen_preview);
     }
 
-    int TerminalEditorWindow::get_level_index() const { return m_internal->m_level_index; }
-    const Terminal& TerminalEditorWindow::get_terminal_data() const { return m_internal->m_terminal_data; }
+    const TerminalID& TerminalEditorWindow::get_terminal_id() const { return m_internal->m_terminal_id; }
 
-	bool TerminalEditorWindow::is_modified() const { return m_internal->m_modified; }
-	void TerminalEditorWindow::clear_modified() 
-	{
-		m_internal->m_modified = false;
-        m_internal->m_saved = false;
-        update_window_title_internal();
-	}
-
-    bool TerminalEditorWindow::validate_terminal_info()
+    QMessageBox::StandardButton TerminalEditorWindow::prompt_save()
     {
         if (m_internal->m_modified)
-        {
-            // Gather and validate terminal info
-            if (!gather_teleport_info(true) || !gather_teleport_info(false))
-            {
-                QMessageBox::warning(this, "Terminal Error", "Active teleport must have valid destination (field must not be empty)!");
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void TerminalEditorWindow::update_window_title(const QString& title)
-    {
-        m_internal->m_title = title;
-        update_window_title_internal();
-    }
-
-    void TerminalEditorWindow::save_changes()
-    {
-        if (m_internal->m_modified)
-        {
-            m_internal->save_screen_changes();
-
-            // Export the terminal changes
-            m_internal->m_terminal_data.set_name(m_internal->m_ui.name_edit->text());
-            m_internal->m_screen_data.export_data(m_internal->m_terminal_data);
-        }
-    }
-
-    void TerminalEditorWindow::closeEvent(QCloseEvent* event)
-    {
-        // Prompt in case we modified the terminal and did not click OK
-        if (m_internal->m_modified && !m_internal->m_saved)
         {
             // Prompt user if they want to save changes
             const QMessageBox::StandardButton user_response = QMessageBox::question(this, "Terminal Modified",
                 QStringLiteral("Save changes to this terminal?"),
-                QMessageBox::StandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel));
+                QMessageBox::StandardButtons(QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::No | QMessageBox::NoToAll | QMessageBox::Cancel));
 
-            switch(user_response)
+            if ((user_response == QMessageBox::Yes) || (user_response == QMessageBox::YesToAll))
             {
-            case QMessageBox::Yes:
-            {
-                save_changes();
+                force_save();
             }
-            break;
-            case QMessageBox::No:
-            {
-                // Unset the flag so we don't read the data from here
-                m_internal->m_modified = false;
-                break;
-            }
-            case QMessageBox::Cancel:
-            {
-                // Stop the window from closing
-                event->ignore();
-                return;
-            }
-            }
+
+            return user_response;
         }
 
-        emit(editor_closed());
+        return QMessageBox::StandardButton::Yes;
+    }
+
+    void TerminalEditorWindow::force_save() { m_internal->save_changes(); }
+
+    void TerminalEditorWindow::closeEvent(QCloseEvent* event)
+    {
+        // Prompt in case we modified the terminal and did not click OK
+        const QMessageBox::StandardButton user_response = prompt_save();
+        if ((user_response != QMessageBox::Yes) && (user_response != QMessageBox::YesToAll))
+        {
+            // Stop the window from closing
+            event->ignore();
+            return;
+        }
+
         QWidget::closeEvent(event);
     }
 
     void TerminalEditorWindow::connect_signals()
     {
+        // Scenario browser model
+        connect(&m_internal->m_model, &QObject::destroyed, this, &QObject::deleteLater); // Delete window if the model is being destroyed (i.e we are closing the app)
+        
+        LevelModel* selected_level = m_internal->m_model.get_level_model(m_internal->m_terminal_id.m_level_id);
+        connect(selected_level, &QObject::destroyed, this, &QObject::deleteLater);
+        connect(selected_level, &LevelModel::terminals_removed, this, &TerminalEditorWindow::terminals_removed);
+
         // Terminal info controls
         connect(m_internal->m_ui.dialog_button_box, &QDialogButtonBox::accepted, this, &TerminalEditorWindow::ok_clicked);
         connect(m_internal->m_ui.dialog_button_box, &QDialogButtonBox::rejected, this, &TerminalEditorWindow::cancel_clicked);
@@ -581,7 +570,10 @@ namespace HuxApp
     void TerminalEditorWindow::init_ui()
     {
         // Set the title
-        update_window_title_internal();
+        const QString terminal_name = m_internal->m_terminal_data.get_name().isEmpty() ? QStringLiteral("TERMINAL (%1)").arg(m_internal->m_terminal_id.m_terminal_id) : m_internal->m_terminal_data.get_name();
+
+        const LevelInfo level_info = m_internal->m_model.get_level_info(m_internal->m_terminal_id.m_level_id);
+        setWindowTitle(QStringLiteral("%1 / %2").arg(level_info.m_name).arg(terminal_name));
 
         init_terminal_info();
         init_screen_editor();
@@ -650,34 +642,15 @@ namespace HuxApp
         m_internal->update_screen_browser_buttons();
     }
 
-    void TerminalEditorWindow::update_window_title_internal()
-    {
-        QString new_title = QStringLiteral("Terminal Editor - ");
-        if (!m_internal->m_terminal_data.get_name().isEmpty())
-        {
-            // Combine the custom title and the AO script title
-            new_title += m_internal->m_terminal_data.get_name() + QStringLiteral(" (%1)").arg(m_internal->m_title);
-        }
-        else
-        {
-            // Just add the AO script title
-            new_title += m_internal->m_title;
-        }
-
-        if (m_internal->m_modified)
-        {
-            new_title += QStringLiteral(" (Modified)");
-        }
-        setWindowTitle(new_title);
-    }
-
     void TerminalEditorWindow::terminal_data_modified()
     {
         if (!m_internal->m_modified)
         {
             m_internal->m_ui.dialog_button_box->button(QDialogButtonBox::StandardButton::Ok)->setEnabled(true);
             m_internal->m_modified = true;
-            update_window_title_internal();
+
+            // Adjust title
+            setWindowTitle(QStringLiteral("%1 (Modified)").arg(windowTitle()));
         }
     }
 
@@ -748,6 +721,20 @@ namespace HuxApp
         }
     }
 
+    bool TerminalEditorWindow::validate_terminal_info()
+    {
+        if (m_internal->m_modified)
+        {
+            // Gather and validate terminal info
+            if (!gather_teleport_info(true) || !gather_teleport_info(false))
+            {
+                QMessageBox::warning(this, "Terminal Error", "Active teleport must have valid destination (field must not be empty)!");
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool TerminalEditorWindow::gather_teleport_info(bool unfinished)
     {
         Terminal::Teleport& teleport_info = m_internal->m_terminal_data.get_teleport_info(unfinished);
@@ -777,15 +764,14 @@ namespace HuxApp
     void TerminalEditorWindow::ok_clicked()
     {
         // Save changes and set the relevant flag
-        save_changes();
-        m_internal->m_saved = true;
+        force_save();
         close();
     }
 
     void TerminalEditorWindow::cancel_clicked() 
     { 
         // Close without saving
-        clear_modified();
+        m_internal->m_modified = false;
         close(); 
     }
 
@@ -985,6 +971,15 @@ namespace HuxApp
         {
             m_internal->reset_edit_notification();
             update_preview();
+        }
+    }
+
+    void TerminalEditorWindow::terminals_removed(const QList<int>& terminal_ids)
+    {
+        if (terminal_ids.indexOf(m_internal->m_terminal_id.m_terminal_id) >= 0)
+        {
+            // The terminal this window was editing has been deleted, remove the window as well
+            deleteLater();
         }
     }
 }

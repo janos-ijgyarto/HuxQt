@@ -30,104 +30,7 @@
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
-       <widget class="QWidget" name="verticalLayoutWidget_4">
-        <layout class="QVBoxLayout" name="scenario_browser_vbox">
-         <item>
-          <layout class="QHBoxLayout" name="scenario_browser_labels_hbox">
-           <item>
-            <widget class="QLabel" name="scenario_browser_label">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Scenario browser:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="scenario_name_label">
-             <property name="text">
-              <string>N/A</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="scenario_up_button_hbox">
-           <item>
-            <widget class="QToolButton" name="scenario_up_button">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="current_level_label">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="HuxApp::Utils::ScenarioBrowserWidget" name="scenario_browser_view"/>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="scenario_browser_buttons_hbox">
-           <item>
-            <widget class="QPushButton" name="add_terminal_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Add New Terminal</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="import_level_script_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="remove_terminal_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Remove Terminal</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
+       <widget class="HuxApp::ScenarioBrowserView" name="scenario_browser" native="true"/>
        <widget class="QWidget" name="verticalLayoutWidget">
         <layout class="QVBoxLayout" name="terminal_contents_vbox">
          <item>
@@ -366,9 +269,10 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>HuxApp::Utils::ScenarioBrowserWidget</class>
-   <extends>QListWidget</extends>
-   <header>Utils/ScenarioBrowserWidget.h</header>
+   <class>HuxApp::ScenarioBrowserView</class>
+   <extends>QWidget</extends>
+   <header>UI/ScenarioBrowserView.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

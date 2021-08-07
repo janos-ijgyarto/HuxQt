@@ -5,6 +5,7 @@
 #include "UI/HuxQt.h"
 
 #include "Scenario/Scenario.h"
+#include "Scenario/ScenarioBrowserModel.h"
 
 #include "Utils/Utilities.h"
 
@@ -659,8 +660,8 @@ namespace HuxApp
 		static void serialize_level_json(const Level& level, QJsonObject& level_json)
 		{
 			level_json["NAME"] = level.get_name();
-			level_json["DIR_NAME"] = level.get_level_dir_name();
-			level_json["SCRIPT_NAME"] = level.get_level_script_name();
+			level_json["DIR_NAME"] = level.get_dir_name();
+			level_json["SCRIPT_NAME"] = level.get_script_name();
 
 			QJsonArray terminal_array;
 			for (const Terminal& current_terminal : level.get_terminals())
@@ -726,8 +727,8 @@ namespace HuxApp
 		static void deserialize_level_json(const QJsonObject& level_json, Scenario& scenario, Level& level)
 		{
 			level.m_name = level_json["NAME"].toString();
-			level.m_level_dir_name = level_json["DIR_NAME"].toString();
-			level.m_level_script_name = level_json["SCRIPT_NAME"].toString();
+			level.m_dir_name = level_json["DIR_NAME"].toString();
+			level.m_script_name = level_json["SCRIPT_NAME"].toString();
 
 			const QJsonArray terminal_array = level_json["TERMINALS"].toArray();
 			for (const QJsonValue& current_terminal_value : terminal_array)
@@ -735,72 +736,21 @@ namespace HuxApp
 				Terminal& current_terminal = level.m_terminals.emplace_back();
 				const QJsonObject current_terminal_json = current_terminal_value.toObject();
 				deserialize_terminal_json(current_terminal_json, current_terminal);
-
-				// Terminal has been parsed, assign ID
-				current_terminal.m_id = scenario.m_terminal_id_counter++;
 			}
 		}
 	};
 
-	ScenarioManager::ScenarioManager(AppCore& core) 
-		: m_core(core)
+	struct ScenarioManager::Internal
 	{
-	}
+		std::unique_ptr<Terminal> m_screen_clipboard;
+
+		std::unordered_map<int, Level> m_level_pool;
+		std::unordered_map<int, Terminal> m_terminal_pool;
+
+		int m_id_counter = 0;
+	};
 
 	ScenarioManager::~ScenarioManager() = default;
-
-	void ScenarioManager::export_level_script(QFile& level_file, const Level& level) const
-	{
-		QString level_script_text = print_level_script(level);
-		QTextStream text_stream(&level_file);
-		text_stream.setCodec(TERMINAL_SCRIPT_CODEC);
-		text_stream << level_script_text;
-	}
-
-	void ScenarioManager::export_terminal_script(const Terminal& terminal, int terminal_index, QString& level_script_text) const
-	{
-		// Start with a comment tag (apparently needed for formatting?)
-		level_script_text += ";\n";
-		
-		// Add the terminal header
-		const QString terminal_id_string = QString::number(terminal_index);
-		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), terminal_id_string);
-
-		if (!terminal.m_unfinished_screens.empty() || (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE))
-		{
-			// Add the UNFINISHED header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::UNFINISHED));
-
-			// Add screens and teleport info
-			export_terminal_screens(terminal.m_unfinished_screens, level_script_text);
-			if (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE)
-			{
-				export_terminal_teleport(terminal.m_unfinished_teleport, level_script_text);
-			}
-
-			// Add the end header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
-		}
-
-		if (!terminal.m_finished_screens.empty() || (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE))
-		{
-			// Add the FINISHED header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::FINISHED));
-
-			// Add screens and teleport info
-			export_terminal_screens(terminal.m_finished_screens, level_script_text);
-			if (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE)
-			{
-				export_terminal_teleport(terminal.m_finished_teleport, level_script_text);
-			}
-
-			// Add the end header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
-		}
-
-		// Add the terminal end header
-		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
-	}
 
 	bool ScenarioManager::save_scenario(const QString& file_path, const Scenario& scenario)
 	{
@@ -842,7 +792,7 @@ namespace HuxApp
 		for (const Level& current_level : scenario.m_levels)
 		{
 			// Open a file for each level, create folder if necessary
-			const QString level_dir_path = split_folder_path + "/" + current_level.get_level_dir_name();
+			const QString level_dir_path = split_folder_path + "/" + current_level.get_dir_name();
 			QDir level_dir;
 			if (!level_dir.exists(level_dir_path))
 			{
@@ -853,7 +803,7 @@ namespace HuxApp
 				}
 			}
 
-			const QString level_file_path = level_dir_path + "/" + current_level.get_level_script_name();
+			const QString level_file_path = QStringLiteral("%1/%2.term.txt").arg(level_dir_path).arg(current_level.get_script_name());
 			QFile level_file(level_file_path);
 			if (!level_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
 			{
@@ -945,16 +895,12 @@ namespace HuxApp
 					// We found a terminal script, parse it
 					Level parsed_level;
 					parsed_level.m_name = current_file.baseName();
-					parsed_level.m_level_dir_name = level_dir_name;
-					parsed_level.m_level_script_name = current_file.fileName();
+					parsed_level.m_dir_name = level_dir_name;
+					parsed_level.m_script_name = current_file.baseName();
 					ScriptParser parser(parsed_level);
 					if (parser.parse_level(current_file))
 					{
-						// Level successfully parsed, assign terminal IDs (used by the UI)
-						for (Terminal& current_terminal : parsed_level.m_terminals)
-						{
-							current_terminal.m_id = scenario.m_terminal_id_counter++;
-						}
+						// Level successfully parsed
 						scenario.m_levels.push_back(parsed_level);
 					}
 					break;
@@ -963,26 +909,6 @@ namespace HuxApp
 		}
 
 		return true;
-	}
-
-	bool ScenarioManager::import_level_terminals(Scenario& scenario, Level& destination_level, const QString& level_script_path)
-	{
-		const QFileInfo level_script_file(level_script_path);
-		Level temp_level;
-		ScriptParser parser(temp_level);
-		if (parser.parse_level(level_script_file))
-		{
-			// Level successfully parsed, assign terminal IDs (used by the UI)
-			for (Terminal& current_terminal : temp_level.m_terminals)
-			{
-				current_terminal.m_id = scenario.m_terminal_id_counter++;
-				current_terminal.set_modified(true);
-				destination_level.m_terminals.push_back(current_terminal);
-			}
-			destination_level.set_modified();
-			return true;
-		}
-		return false;
 	}
 
 	QString ScenarioManager::print_level_script(const Level& level) const
@@ -997,20 +923,25 @@ namespace HuxApp
 		return level_script_text;
 	}
 
+	const Terminal* ScenarioManager::get_screen_clipboard() const
+	{
+		return m_internal->m_screen_clipboard.get();
+	}
+
 	void ScenarioManager::set_screen_clipboard(const Terminal& terminal_data)
 	{
-		if (!m_screen_clipboard)
+		if (!m_internal->m_screen_clipboard)
 		{
-			m_screen_clipboard = std::make_unique<Terminal>();
+			m_internal->m_screen_clipboard = std::make_unique<Terminal>();
 		}
-		*m_screen_clipboard = terminal_data;
+		*m_internal->m_screen_clipboard = terminal_data;
 	}
 
 	void ScenarioManager::clear_screen_clipboard()
 	{
-		if (m_screen_clipboard)
+		if (m_internal->m_screen_clipboard)
 		{
-			m_screen_clipboard.reset();
+			m_internal->m_screen_clipboard.reset();
 		}
 	}
 
@@ -1115,166 +1046,62 @@ namespace HuxApp
 		return exported_ao_text;
 	}
 
-	QStringList ScenarioManager::gather_additional_levels(const Scenario& scenario, const QString& split_folder_path)
+	ScenarioManager::ScenarioManager(AppCore& core)
+		: m_core(core)
+		, m_internal(std::make_unique<Internal>())
 	{
-		// Gather a set of the directory names that were already added
-		QSet<QString> existing_levels;
-		for (const Level& current_level : scenario.m_levels)
-		{
-			existing_levels << current_level.get_level_dir_name();
-		}
+	}
 
-		// Create list of directories in the scenario folder which aren't in the current list of levels
-		QDirIterator dir_it(split_folder_path, QDir::Dirs | QDir::NoDotAndDotDot);
-		QStringList non_scripted_levels;
-		while (dir_it.hasNext())
+	void ScenarioManager::export_level_script(QFile& level_file, const Level& level) const
+	{
+		QString level_script_text = print_level_script(level);
+		QTextStream text_stream(&level_file);
+		text_stream.setCodec(TERMINAL_SCRIPT_CODEC);
+		text_stream << level_script_text;
+	}
+
+	void ScenarioManager::export_terminal_script(const Terminal& terminal, int terminal_index, QString& level_script_text) const
+	{
+		// Start with a comment tag (apparently needed for formatting?)
+		level_script_text += ";\n";
+
+		// Add the terminal header
+		const QString terminal_id_string = QString::number(terminal_index);
+		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), terminal_id_string);
+
+		if (!terminal.m_unfinished_screens.empty() || (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE))
 		{
-			dir_it.next();
-			const QString current_dir_name = dir_it.fileInfo().baseName();
-			// Make sure the folder isn't the Resources folder, nor is it an already added level
-			if ((current_dir_name != "Resources") && !existing_levels.contains(current_dir_name))
+			// Add the UNFINISHED header
+			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::UNFINISHED));
+
+			// Add screens and teleport info
+			export_terminal_screens(terminal.m_unfinished_screens, level_script_text);
+			if (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE)
 			{
-				non_scripted_levels << current_dir_name;
+				export_terminal_teleport(terminal.m_unfinished_teleport, level_script_text);
 			}
+
+			// Add the end header
+			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
 		}
 
-		// Finally check the level directory contents to find out which ones have a valid level
-		QStringList available_levels;
-		for (const QString& current_level_name : non_scripted_levels)
+		if (!terminal.m_finished_screens.empty() || (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE))
 		{
-			const QDir current_level_dir(split_folder_path + "/" + current_level_name);
-			const QFileInfoList file_info_list = current_level_dir.entryInfoList(QDir::Files);
+			// Add the FINISHED header
+			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::FINISHED));
 
-			for (const QFileInfo& current_file : file_info_list)
+			// Add screens and teleport info
+			export_terminal_screens(terminal.m_finished_screens, level_script_text);
+			if (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE)
 			{
-				const QString suffix = current_file.completeSuffix();
-				if (suffix == "sceA")
-				{
-					// We found a level file, so we can add it to the list
-					available_levels << current_file.baseName();
-					available_levels << current_level_name;
-				}
+				export_terminal_teleport(terminal.m_finished_teleport, level_script_text);
 			}
+
+			// Add the end header
+			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
 		}
 
-		return available_levels;
-	}
-
-	bool ScenarioManager::add_scenario_level(Scenario& scenario, const QString& level_dir_name)
-	{
-		// FIXME: implement this!
-		//const QDir new_level_dir(scenario.get_merge_folder_path() + "/" + level_dir_name);
-		//const QFileInfoList file_info_list = new_level_dir.entryInfoList(QDir::Files);
-		//
-		//for (const QFileInfo& current_file : file_info_list)
-		//{
-		//	if (current_file.completeSuffix() == "sceA")
-		//	{
-		//		// Use the level file name as the name for our terminal script name
-		//		Level new_level;
-		//		new_level.m_name = current_file.baseName();
-		//		new_level.m_level_dir_name = level_dir_name;
-		//		new_level.m_level_script_name = current_file.baseName() + "term.txt";
-
-		//		// Add level to the scenario
-		//		scenario.m_levels.push_back(new_level);
-		//		return true;
-		//	}
-		//}
-
-		// Something went wrong
-		return false;
-	}
-
-	bool ScenarioManager::delete_scenario_level_script(Scenario& scenario, size_t level_index)
-	{
-		// FIXME: implement this correctly!
-		/*const Level& selected_level = scenario.m_levels[level_index];
-		const QString level_script_path = scenario.get_merge_folder_path() + "/" + selected_level.m_level_dir_name + "/" + selected_level.m_level_script_name;
-
-		if (QFile::exists(level_script_path))
-		{
-			return QFile::remove(level_script_path);
-		}*/
-		return true;
-	}
-
-	void ScenarioManager::remove_scenario_level(Scenario& scenario, size_t level_index)
-	{
-		scenario.m_levels.erase(scenario.m_levels.begin() + level_index);
-	}
-
-	void ScenarioManager::add_level_terminal(Scenario& scenario, Level& level)
-	{
-		level.m_terminals.emplace_back(); 
-		level.m_terminals.back().m_id = scenario.m_terminal_id_counter++;
-		level.set_modified();
-	}
-
-	void ScenarioManager::add_level_terminal(Scenario& scenario, Level& level, const Terminal& terminal, size_t index)
-	{
-		const size_t terminal_index = std::clamp(index, size_t(0), level.m_terminals.size());
-		auto new_terminal_it = level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminal);
-		new_terminal_it->m_id = scenario.m_terminal_id_counter++;
-		new_terminal_it->set_modified(true);
-		level.set_modified();
-	}
-
-	void ScenarioManager::add_level_terminals(Scenario& scenario, Level& level, const std::vector<Terminal>& terminals, size_t index)
-	{
-		const size_t terminal_index = std::clamp(index, size_t(0), level.m_terminals.size());
-
-		auto new_terminals_begin = level.m_terminals.insert(level.m_terminals.begin() + terminal_index, terminals.begin(), terminals.end());
-		auto new_terminals_end = new_terminals_begin + terminals.size();
-		for (auto new_terminal_it = new_terminals_begin; new_terminal_it != new_terminals_end; ++new_terminal_it)
-		{
-			new_terminal_it->m_id = scenario.m_terminal_id_counter++;
-			new_terminal_it->set_modified(true);
-		}
-		level.set_modified();
-	}
-
-	void ScenarioManager::reorder_level_terminals(Level& level, const std::vector<int>& terminal_ids, const std::unordered_set<int>& moved_ids)
-	{
-		assert(terminal_ids.size() == level.m_terminals.size());
-		const std::vector<Terminal> level_terminals = level.m_terminals;
-		auto terminal_it = level.m_terminals.begin();
-		for (int current_id : terminal_ids)
-		{
-			auto moving_terminal_it = std::find_if(level_terminals.begin(), level_terminals.end(),
-				[current_id](const Terminal& current_terminal)
-				{
-					return (current_terminal.get_id() == current_id);
-				}
-			);
-			assert(moving_terminal_it != level_terminals.end());
-
-			*terminal_it = *moving_terminal_it;
-			// Indicate which terminals were moved
-			if (moved_ids.find(current_id) != moved_ids.end())
-			{
-				terminal_it->set_modified(true);
-			}
-			++terminal_it;
-		}
-		level.set_modified();
-	}
-
-	void ScenarioManager::remove_level_terminals(Level& level, const std::vector<size_t>& terminal_indices)
-	{
-		const std::vector<Terminal> prev_terminals = level.m_terminals;
-		level.m_terminals.clear();
-
-		size_t current_index = 0;
-		for (const Terminal& current_terminal : prev_terminals)
-		{
-			if (std::find(terminal_indices.begin(), terminal_indices.end(), current_index) == terminal_indices.end())
-			{
-				// Index not among those to be removed
-				level.m_terminals.push_back(current_terminal);
-			}
-			++current_index;
-		}
-		level.set_modified();
+		// Add the terminal end header
+		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
 	}
 }

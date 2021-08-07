@@ -52,13 +52,8 @@ namespace HuxApp
 			void reset();
 		};
 
-		int get_id() const { return m_id; }
-		
 		const QString& get_name() const { return m_name; }
 		void set_name(const QString& name) { m_name = name; }
-
-		bool is_modified() const { return m_modified; }
-		void set_modified(bool modified) { m_modified = modified; }
 
 		Screen& get_screen(int index, bool unfinished) { return (unfinished ? m_unfinished_screens[index] : m_finished_screens[index]); }
 		std::vector<Screen>& get_screens(bool unfinished) { return (unfinished ? m_unfinished_screens : m_finished_screens); }
@@ -72,9 +67,7 @@ namespace HuxApp
 
 		static QString get_screen_string(const Screen& screen_data);
 	private:
-		int m_id = -1;
 		QString m_name;
-		bool m_modified = false;
 
 		std::vector<Screen> m_unfinished_screens;
 		Teleport m_unfinished_teleport;
@@ -85,5 +78,21 @@ namespace HuxApp
 		QString m_comments;
 
 		friend class ScenarioManager;
+	};
+
+	// Utility object for model/view logic
+	struct TerminalID
+	{
+		int m_level_id = -1;
+		int m_terminal_id = -1;
+
+		bool is_valid() const { return (m_level_id >= 0) && (m_terminal_id >= 0); }
+		void invalidate()
+		{
+			m_level_id = -1;
+			m_terminal_id = -1;
+		}
+
+		bool operator==(const TerminalID& rhs) const { return (m_level_id == rhs.m_level_id) && (m_terminal_id == rhs.m_terminal_id); }
 	};
 }
