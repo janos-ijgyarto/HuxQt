@@ -4,13 +4,12 @@
 
 TEMPLATE = app
 TARGET = HuxQt
-DESTDIR = ../x64/Debug
-CONFIG += debug
+DESTDIR = build
 LIBS += -L"."
 PRECOMPILED_HEADER = stdafx.h
 DEPENDPATH += .
 MOC_DIR += .
-OBJECTS_DIR += debug
+OBJECTS_DIR += temp
 UI_DIR += .
 RCC_DIR += .
 include(HuxQt.pri)

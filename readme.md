@@ -104,7 +104,15 @@ If a screen's text content exceeds the line limit for a single page, the preview
 
 ### Saving Scenarios
 
+If you have unsaved changes, you can save the scenario file using _File->Save Scenario_. This will save the terminal scripting data to the Hux-specific JSON file.
+
+When saving for the first time, you will be prompted for a scenario name and location. Subsequent saves will overwrite this file. To save the scenario to a different location, you can use _File->Save Scenario As_.
+
+*NOTE: editor-specific data (e.g terminal names) are only saved in the JSON file. This data is lost if the user tries to reload a scenario from the exported .txt files!*
+
 The user can also be prompted to save when exiting (this will skip the above steps).
+
+*NOTE: the application expects the scenario file to be in the same folder as the Resources folder for the scenario, otherwise it cannot access the referenced images!*
 
 ### Exporting Scenarios
 
