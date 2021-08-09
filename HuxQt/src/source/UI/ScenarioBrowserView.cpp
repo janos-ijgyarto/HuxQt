@@ -25,10 +25,6 @@ namespace HuxApp
 
 				// Set the level model for the view
 				m_ui.scenario_browser_view->setModel(m_opened_level);
-
-				// Update the path label
-				const LevelInfo level_info = m_model->get_level_info(m_opened_level->get_id());
-				m_ui.scenario_path_label->setText(QStringLiteral("%1 / %2").arg(m_model->get_name()).arg(level_info.m_name));
 			}
 			else
 			{
@@ -40,12 +36,25 @@ namespace HuxApp
 
 				// Set the level list model for the view
 				m_ui.scenario_browser_view->setModel(&m_model->get_level_list());
-
-				// Reset the path label
-				m_ui.scenario_path_label->setText(m_model->get_name());
 			}
 
+			update_path_label();
 			update_buttons();
+		}
+
+		void update_path_label()
+		{
+			if (m_opened_level)
+			{
+				// Update with the opened level
+				const LevelInfo level_info = m_model->get_level_info(m_opened_level->get_id());
+				m_ui.scenario_path_label->setText(QStringLiteral("%1 / %2").arg(m_model->get_name()).arg(level_info.m_name));
+			}
+			else
+			{
+				// Reset the label
+				m_ui.scenario_path_label->setText(m_model->get_name());
+			}
 		}
 
 		void open_level(const QModelIndex& index)
@@ -83,6 +92,8 @@ namespace HuxApp
 		m_internal->m_model = model; 
 		m_internal->m_opened_level = nullptr;
 		m_internal->update_view();
+
+		connect(model, &ScenarioBrowserModel::scenario_name_changed, [this]() { m_internal->update_path_label(); });
 	}
 
 	void ScenarioBrowserView::init_ui()

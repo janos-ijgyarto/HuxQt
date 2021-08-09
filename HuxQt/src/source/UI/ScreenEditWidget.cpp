@@ -60,6 +60,25 @@ namespace HuxApp
             Qt::white,
             Qt::white
         };
+
+        QString get_resource_value_label(Terminal::ScreenType screen_type)
+        {
+            switch (screen_type)
+            {
+            case Terminal::ScreenType::LOGON:
+            case Terminal::ScreenType::PICT:
+            case Terminal::ScreenType::LOGOFF:
+                return QStringLiteral("Image ID:");
+            case Terminal::ScreenType::CHECKPOINT:
+                return QStringLiteral("Checkpoint ID:");
+            case Terminal::ScreenType::TAG:
+                return QStringLiteral("Tag ID:");
+            case Terminal::ScreenType::STATIC:
+                return QStringLiteral("Static duration:");
+            }
+
+            return QStringLiteral("N/A");
+        }
     }
 
     ScreenEditWidget::ScreenEditWidget(QWidget* parent)
@@ -67,7 +86,6 @@ namespace HuxApp
         , m_core(nullptr)
         , m_modified(false)
         , m_text_dirty(false)
-        , m_resource_browser_enabled(false)
         , m_initializing(false)
     {
         m_ui.setupUi(this);
@@ -97,10 +115,10 @@ namespace HuxApp
         m_ui.alignment_combo->setCurrentIndex(Utils::to_integral(screen_data.m_alignment));
 
         // Enable controls based on whether the screen type is properly set (still update the controls, as we may have just toggled the type)
-        validate_screen(screen_data.m_type);
+        update_controls(screen_data.m_type);
 
         // Update the control values
-        m_ui.resource_id_edit->setText(QString::number(screen_data.m_resource_id));
+        m_ui.resource_value_edit->setText(QString::number(screen_data.m_resource_id));
         m_ui.screen_text_edit->setPlainText(screen_data.m_script);
 
         // Unset the flag to allow state changes
@@ -112,7 +130,7 @@ namespace HuxApp
         // Set initializing flag to lock the state changes
         m_initializing = true;
 
-        m_ui.resource_id_edit->clear();
+        m_ui.resource_value_edit->clear();
         m_ui.screen_text_edit->clear();
 
         // Unset the flag to allow state changes
@@ -131,7 +149,7 @@ namespace HuxApp
         case Terminal::ScreenType::TAG:
         case Terminal::ScreenType::STATIC:
         {
-            if (m_ui.resource_id_edit->text().isEmpty())
+            if (m_ui.resource_value_edit->text().isEmpty())
             {
                 QMessageBox::warning(this, "Screen Data Error", "Must set a valid resource ID!");
                 return false;
@@ -163,24 +181,15 @@ namespace HuxApp
         }
     }
 
-    bool ScreenEditWidget::eventFilter(QObject* obj, QEvent* event)
-    {
-        if ((obj == m_ui.resource_id_edit) && (event->type() == QEvent::MouseButtonDblClick))
-        {
-            screen_resource_clicked();
-        }
-
-        return false;
-    }
-
     void ScreenEditWidget::connect_signals()
     {
         connect(m_ui.screen_type_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::screen_type_combo_activated);
         connect(m_ui.alignment_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::screen_alignment_combo_activated);
         connect(m_ui.text_color_combo, QOverload<int>::of(&QComboBox::activated), this, &ScreenEditWidget::color_combo_activated);
-        connect(m_ui.resource_id_edit, &QLineEdit::textEdited, this, &ScreenEditWidget::screen_resource_edited);
+        connect(m_ui.resource_value_edit, &QLineEdit::textEdited, this, &ScreenEditWidget::screen_resource_edited);
         connect(m_ui.screen_text_edit, &QPlainTextEdit::textChanged, this, &ScreenEditWidget::screen_text_edited);
 
+        connect(m_ui.resource_browse_button, &QPushButton::clicked, this, &ScreenEditWidget::browse_resource_clicked);
         connect(m_ui.bold_button, &QPushButton::clicked, this, &ScreenEditWidget::bold_button_clicked);
         connect(m_ui.italic_button, &QPushButton::clicked, this, &ScreenEditWidget::italic_button_clicked);
         connect(m_ui.underline_button, &QPushButton::clicked, this, &ScreenEditWidget::underline_button_clicked);
@@ -197,8 +206,7 @@ namespace HuxApp
 
     void ScreenEditWidget::init_ui()
     {
-        m_ui.resource_id_edit->setValidator(new QIntValidator(this));
-        m_ui.resource_id_edit->installEventFilter(this);
+        m_ui.resource_value_edit->setValidator(new QIntValidator(this));
 
         for (int screen_type_index = 0; screen_type_index < Utils::to_integral(Terminal::ScreenType::TYPE_COUNT); ++screen_type_index)
         {
@@ -217,49 +225,34 @@ namespace HuxApp
             m_ui.text_color_combo->setItemData(text_color_index, COLOR_COMBO_TEXT_COLORS[text_color_index], Qt::ForegroundRole);
         }
 
+        m_ui.resource_browse_button->setVisible(false);
+
         m_ui.screen_type_combo->setCurrentIndex(0);
         m_ui.alignment_combo->setCurrentIndex(0);
         m_ui.text_color_combo->setCurrentIndex(0);
         color_combo_activated(0); // Set the button to the appropriate color
     }
 
-    void ScreenEditWidget::enable_controls(bool enable)
-    {
-        m_ui.resource_id_edit->setEnabled(enable);
-        m_ui.alignment_combo->setEnabled(enable);
-        m_ui.screen_text_edit->setEnabled(enable);
-        m_ui.bold_button->setEnabled(enable);
-        m_ui.italic_button->setEnabled(enable);
-        m_ui.underline_button->setEnabled(enable);
-        m_ui.text_color_button->setEnabled(enable);
-        m_ui.text_color_combo->setEnabled(enable);
-    }
-
-    void ScreenEditWidget::validate_screen(Terminal::ScreenType screen_type)
+    void ScreenEditWidget::update_controls(Terminal::ScreenType screen_type)
     {
         // Enable/disable specific controls based on screen type
         const bool valid_screen = (screen_type != Terminal::ScreenType::NONE) && (screen_type != Terminal::ScreenType::TAG) && (screen_type != Terminal::ScreenType::STATIC);
-        enable_controls(valid_screen);
 
-        switch (screen_type)
-        {
-        case Terminal::ScreenType::INFORMATION:
-            m_ui.resource_id_edit->setEnabled(false);
-            m_resource_browser_enabled = false;
-            break;
-        case Terminal::ScreenType::CHECKPOINT:
-        case Terminal::ScreenType::TAG:
-        case Terminal::ScreenType::STATIC:
-            m_ui.resource_id_edit->setReadOnly(false);
-            m_ui.resource_id_edit->setEnabled(true);
-            m_resource_browser_enabled = false;
-            break;
-        default:
-            m_ui.resource_id_edit->setEnabled(true && valid_screen);
-            m_ui.resource_id_edit->setReadOnly(true); // Only allow direct editing when working on a CHECKPOINT screen
-            m_resource_browser_enabled = true && valid_screen;
-            break;
-        }
+        m_ui.alignment_combo->setEnabled((screen_type == Terminal::ScreenType::PICT) || (screen_type == Terminal::ScreenType::CHECKPOINT)); // Alignment is only used by PICT and CHECKPOINT
+        m_ui.screen_text_edit->setEnabled(valid_screen);
+        m_ui.bold_button->setEnabled(valid_screen);
+        m_ui.italic_button->setEnabled(valid_screen);
+        m_ui.underline_button->setEnabled(valid_screen);
+        m_ui.text_color_button->setEnabled(valid_screen);
+        m_ui.text_color_combo->setEnabled(valid_screen);
+
+        m_ui.resource_value_edit->setEnabled((screen_type != Terminal::ScreenType::NONE) && (screen_type != Terminal::ScreenType::INFORMATION));
+
+        // Show the browse button if the screen type has an image
+        m_ui.resource_browse_button->setVisible(valid_screen && (screen_type != Terminal::ScreenType::INFORMATION) && (screen_type != Terminal::ScreenType::CHECKPOINT));
+
+        // Update the resource label
+        m_ui.resource_value_label->setText(get_resource_value_label(screen_type));
     }
 
     void ScreenEditWidget::screen_type_combo_activated(int index)
@@ -267,27 +260,23 @@ namespace HuxApp
         if (index != Utils::to_integral(m_screen_data.m_type))
         {
             m_screen_data.m_type = static_cast<Terminal::ScreenType>(index);
-            validate_screen(m_screen_data.m_type); // We changed the screen type, so we need to make sure the correct controls are available
+            update_controls(m_screen_data.m_type); // We changed the screen type, so we need to make sure the correct controls are available
             screen_edited_internal(true);
         }
     }
 
-    void ScreenEditWidget::screen_resource_clicked()
+    void ScreenEditWidget::browse_resource_clicked()
     {
-        const Terminal::ScreenType current_screen_type = static_cast<Terminal::ScreenType>(m_ui.screen_type_combo->currentIndex());
-        if (m_ui.resource_id_edit->isEnabled() && m_resource_browser_enabled)
-        {
-            BrowsePictDialog* pict_dialog = new BrowsePictDialog(*m_core, this);
-            connect(pict_dialog, &BrowsePictDialog::pict_selected, this, &ScreenEditWidget::pict_selected);
-            pict_dialog->open();
-        }
+        BrowsePictDialog* pict_dialog = new BrowsePictDialog(*m_core, this);
+        connect(pict_dialog, &BrowsePictDialog::pict_selected, this, &ScreenEditWidget::pict_selected);
+        pict_dialog->open();
     }
 
     void ScreenEditWidget::pict_selected(int pict_id)
     {
         if (m_screen_data.m_resource_id != pict_id)
         {
-            m_ui.resource_id_edit->setText(QString::number(pict_id));
+            m_ui.resource_value_edit->setText(QString::number(pict_id));
             m_screen_data.m_resource_id = pict_id;
             screen_edited_internal(true);
         }

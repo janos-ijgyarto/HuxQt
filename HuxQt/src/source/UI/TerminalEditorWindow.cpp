@@ -402,6 +402,34 @@ namespace HuxApp
             }
         }
 
+        void save_teleport_info(bool unfinished)
+        {
+            Terminal::Teleport& teleport_info = m_terminal_data.get_teleport_info(unfinished);
+            QLineEdit* teleport_index_edit = unfinished ? m_ui.unfinished_teleport_edit : m_ui.finished_teleport_edit;
+            QComboBox* teleport_type_combo = unfinished ? m_ui.unfinished_teleport_type : m_ui.finished_teleport_type;
+
+            // First set the type
+            teleport_info.m_type = static_cast<Terminal::TeleportType>(teleport_type_combo->currentIndex());
+
+            if (teleport_info.m_type != Terminal::TeleportType::NONE)
+            {
+                // Active teleport, so the user must provide a valid input
+                const QString teleport_index_text = teleport_index_edit->text();
+                if (!teleport_index_text.isEmpty())
+                {
+                    teleport_info.m_index = teleport_index_text.toInt();
+                }
+                else
+                {
+                    teleport_info.m_index = 0;
+                }
+            }
+            else
+            {
+                teleport_info.m_index = -1;
+            }
+        }
+
         void clear_screen_editor()
         {
             m_ui.screen_edit_widget->setEnabled(false);
@@ -461,6 +489,10 @@ namespace HuxApp
                 // Export the terminal changes
                 m_terminal_data.set_name(m_ui.name_edit->text());
                 m_screen_data.export_data(m_terminal_data);
+
+                // Save the teleport info
+                save_teleport_info(true);
+                save_teleport_info(false);
 
                 m_model.update_terminal_data(m_terminal_id, m_terminal_data);
 

@@ -26,16 +26,13 @@ namespace HuxApp
 		void update_display_text();
 	signals:
 		void screen_edited(bool attributes);
-	protected:
-		bool eventFilter(QObject* obj, QEvent* event) override;
 	private:
 		void connect_signals();
 		void init_ui();
-		void enable_controls(bool enable);
-		void validate_screen(Terminal::ScreenType screen_type);
+		void update_controls(Terminal::ScreenType screen_type);
 
 		void screen_type_combo_activated(int index);
-		void screen_resource_clicked();
+		void browse_resource_clicked();
 		void pict_selected(int pict_id);
 		void screen_resource_edited(const QString& text);
 		void screen_alignment_combo_activated(int index);
@@ -59,7 +56,6 @@ namespace HuxApp
 		// Flags
 		bool m_modified;
 		bool m_text_dirty;
-		bool m_resource_browser_enabled;
 		bool m_initializing;
 
 		Ui::ScreenEditWidget m_ui;

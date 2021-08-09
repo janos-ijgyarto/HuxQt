@@ -242,8 +242,9 @@ namespace HuxApp
 			update_image(selected_view, data);
 			update_text(selected_view, data);
 
-			// Update the screen type
+			// Update the screen type and alignment
 			selected_view.m_display_data.m_screen_type = data.m_screen_type;
+			selected_view.m_display_data.m_alignment = data.m_alignment;
 		}
 
 		// Return how many lines the current text contains
@@ -281,6 +282,7 @@ namespace HuxApp
 	{
 		switch (data.m_screen_type)
 		{
+		case Terminal::ScreenType::NONE:
 		case Terminal::ScreenType::INFORMATION:
 		case Terminal::ScreenType::CHECKPOINT:
 		case Terminal::ScreenType::TAG:
@@ -298,7 +300,7 @@ namespace HuxApp
 			break;
 		}
 
-		if (data.m_resource_id != view.m_display_data.m_resource_id)
+		if ((data.m_resource_id != view.m_display_data.m_resource_id) || (data.m_resource_id == -1))
 		{
 			// Load the new resource (code is only reachable when the screen has an image)
 			view.m_image_item->setPixmap(m_internal->get_pict(data.m_resource_id));
@@ -348,7 +350,7 @@ namespace HuxApp
 			if (data.m_alignment == Terminal::ScreenAlignment::CENTER)
 			{
 				// Do not display centered PICT text!
-				view.m_image_item->setVisible(false);
+				view.m_text_item->setVisible(false);
 				return;
 			}
 			else

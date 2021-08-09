@@ -17,8 +17,7 @@ namespace HuxApp
 		void connect_signals();
 
 		void ok_clicked();
-		void level_item_double_clicked(QListWidgetItem* level_item);
-		void level_script_tab_closed(int index);
+		void level_item_clicked(QListWidgetItem* level_item);
 
 		Ui::ExportScenarioDialog m_ui;
 		QString m_init_path;

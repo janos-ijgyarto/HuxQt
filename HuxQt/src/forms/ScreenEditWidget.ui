@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QHBoxLayout" name="screen_attribute_hbox" stretch="0,1,0,1,0,1">
+    <layout class="QHBoxLayout" name="screen_attribute_hbox" stretch="0,1,0,1,0,0,1">
      <item>
       <widget class="QLabel" name="screen_type_label">
        <property name="text">
@@ -27,14 +27,21 @@
       <widget class="QComboBox" name="screen_type_combo"/>
      </item>
      <item>
-      <widget class="QLabel" name="resource_id_label">
+      <widget class="QLabel" name="resource_value_label">
        <property name="text">
-        <string>Resource ID:</string>
+        <string>N/A</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="resource_id_edit"/>
+      <widget class="QLineEdit" name="resource_value_edit"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="resource_browse_button">
+       <property name="text">
+        <string>Browse</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="alignment_label">

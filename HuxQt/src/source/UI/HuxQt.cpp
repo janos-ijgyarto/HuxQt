@@ -48,6 +48,7 @@ namespace HuxApp
         Ui::HuxQtMainWindow m_ui;
 
         ScenarioBrowserModel m_scenario_browser_model;
+        bool m_scenario_modified = false;
 
         TerminalID m_selected_terminal;
 
@@ -587,8 +588,12 @@ namespace HuxApp
 
     void HuxQt::scenario_modified()
     {
-        // Set the title
-        setWindowTitle(QStringLiteral("Hux - %1 (Modified)").arg(m_internal->m_scenario_browser_model.get_name()));
+        if (!m_internal->m_scenario_modified)
+        {
+            // Set the title
+            setWindowTitle(QStringLiteral("Hux - %1 (Modified)").arg(m_internal->m_scenario_browser_model.get_name()));
+            m_internal->m_scenario_modified = true;
+        }
     }
 
     void HuxQt::display_current_screen()
@@ -724,12 +729,14 @@ namespace HuxApp
             return false;
         }
 
-        // Save successful, cache the file location
+        // Save successful, cache the file location and overwrite the name
+        m_internal->m_scenario_browser_model.set_name(file_info.baseName());
         m_internal->m_scenario_browser_model.set_path(file_info.absoluteDir().absolutePath());
         m_internal->m_scenario_browser_model.set_file_name(file_info.fileName());
 
         // Clear all the UI modifications
         m_internal->m_scenario_browser_model.clear_modified();
+        m_internal->m_scenario_modified = false;
         setWindowTitle(QStringLiteral("Hux - %1").arg(m_internal->m_scenario_browser_model.get_name()));
         return true;
     }
@@ -767,5 +774,6 @@ namespace HuxApp
 
         // Set the title
         setWindowTitle(QStringLiteral("Hux - %1").arg(scenario.get_name()));
+        m_internal->m_scenario_modified = false;
     }
 }

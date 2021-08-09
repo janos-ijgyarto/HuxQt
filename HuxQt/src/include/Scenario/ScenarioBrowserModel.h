@@ -86,6 +86,7 @@ namespace HuxApp
 
 		ScenarioBrowserModel(QObject* parent = nullptr);
 
+		void set_name(const QString& name) { m_name = name; emit(scenario_name_changed()); }
 		const QString& get_name() const { return m_name; }
 
 		const QString& get_file_name() const { return m_file_name; }
@@ -122,6 +123,7 @@ namespace HuxApp
 
 		std::vector<Terminal>& get_terminal_clipboard() { return m_terminal_clipboard; }
 	signals:
+		void scenario_name_changed();
 		void scenario_modified();
 	private:
 		void clear_internal();

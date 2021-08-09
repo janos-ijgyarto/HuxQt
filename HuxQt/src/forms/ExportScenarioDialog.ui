@@ -36,14 +36,35 @@
      <widget class="QWidget" name="verticalLayoutWidget">
       <layout class="QVBoxLayout" name="preview_tabs_vbox">
        <item>
-        <widget class="QLabel" name="script_preview_label">
-         <property name="text">
-          <string>Level script previews:</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="preview_label_hbox">
+         <item>
+          <widget class="QLabel" name="script_preview_label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Level script preview:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="script_name_label">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QTabWidget" name="script_preview_tabs"/>
+        <widget class="QPlainTextEdit" name="script_preview">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
