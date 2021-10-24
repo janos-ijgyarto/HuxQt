@@ -1100,6 +1100,7 @@ namespace HuxApp
 
 			for (const QFileInfo& current_file : file_info_list)
 			{
+				// Need to check the end to make sure we catch the correct suffix (using the QFileInfo helper func might return an incorrect suffix)
 				const QString file_name = current_file.fileName();
 				if (file_name.endsWith(".term.txt"))
 				{
