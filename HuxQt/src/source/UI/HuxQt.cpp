@@ -24,6 +24,10 @@ namespace HuxApp
 {
     namespace
     {
+        constexpr int APP_VERSION_MAJOR = 0;
+        constexpr int APP_VERSION_MINOR = 5;
+        constexpr int APP_VERSION_PATCH = 2;
+
         constexpr const char* TELEPORT_TYPE_LABELS[Utils::to_integral(Terminal::TeleportType::TYPE_COUNT)] =
         {
             "NONE",
@@ -41,6 +45,8 @@ namespace HuxApp
             "TAG",
             "STATIC"
         };
+
+        QString get_app_version_string() { return QStringLiteral("%1.%2.%3").arg(APP_VERSION_MAJOR).arg(APP_VERSION_MINOR).arg(APP_VERSION_PATCH); }
     }
 
     struct HuxQt::Internal
@@ -288,6 +294,8 @@ namespace HuxApp
     {
         m_internal->m_ui.setupUi(this);
 
+        update_title();
+
         init_ui();
         connect_signals();
 
@@ -389,6 +397,17 @@ namespace HuxApp
     {
         m_internal->reset_terminal_ui();
         clear_preview_display();
+    }
+
+    void HuxQt::update_title(const QString& text)
+    {
+        QString title = QStringLiteral("Hux (version %1)").arg(get_app_version_string());
+        if (!text.isEmpty())
+        {
+            title = QStringLiteral("%1 - %2").arg(title).arg(text);
+        }
+
+        setWindowTitle(title);
     }
 
     void HuxQt::open_scenario()
@@ -591,7 +610,7 @@ namespace HuxApp
         if (!m_internal->m_scenario_modified)
         {
             // Set the title
-            setWindowTitle(QStringLiteral("Hux - %1 (Modified)").arg(m_internal->m_scenario_browser_model.get_name()));
+            update_title(QStringLiteral("%2 (Modified)").arg(m_internal->m_scenario_browser_model.get_name()));
             m_internal->m_scenario_modified = true;
         }
     }
@@ -737,7 +756,8 @@ namespace HuxApp
         // Clear all the UI modifications
         m_internal->m_scenario_browser_model.clear_modified();
         m_internal->m_scenario_modified = false;
-        setWindowTitle(QStringLiteral("Hux - %1").arg(m_internal->m_scenario_browser_model.get_name()));
+        
+        update_title(m_internal->m_scenario_browser_model.get_name());
         return true;
     }
 
@@ -773,7 +793,7 @@ namespace HuxApp
         m_internal->m_scenario_browser_model.set_path(path);
 
         // Set the title
-        setWindowTitle(QStringLiteral("Hux - %1").arg(scenario.get_name()));
+        update_title(scenario.get_name());
         m_internal->m_scenario_modified = false;
     }
 }

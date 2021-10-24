@@ -21,9 +21,9 @@ namespace HuxApp
 		// Text rendering constants
 		// NOTE: these values are just about good enough to create WYSIWYG between the tool and Aleph One (some of the word wrapping won't be 100% there)
 		// The preview config window can be used for further tweaking
-		constexpr qreal DEFAULT_LINE_SPACING = -4.0;
-		constexpr qreal DEFAULT_WORD_SPACING = -1.0;
-		constexpr qreal DEFAULT_LETTER_SPACING = -1.0;
+		constexpr qreal DEFAULT_LINE_SPACING = -4.00;
+		constexpr qreal DEFAULT_WORD_SPACING = -0.60;
+		constexpr qreal DEFAULT_LETTER_SPACING = -1.25;
 		constexpr qreal DEFAULT_HORIZONTAL_MARGIN = 72;
 		constexpr qreal DEFAULT_VERTICAL_MARGIN = 27;
 
@@ -58,6 +58,20 @@ namespace HuxApp
 
 			return line_count;
 		}
+
+		int get_screen_character_limit(Terminal::ScreenType screen_type)
+		{
+			switch (screen_type)
+			{
+				case Terminal::ScreenType::INFORMATION:
+					return 70;
+				case Terminal::ScreenType::PICT:
+				case Terminal::ScreenType::CHECKPOINT:
+					return 43;
+			}
+
+			return -1;
+		}
 	}
 
 	struct DisplaySystem::ViewData
@@ -75,7 +89,9 @@ namespace HuxApp
 			: m_font("Courier")
 		{
 			// Set the configurations for each scene
-			m_font.setPointSize(1);
+			m_font.setPointSizeF(0.5f);
+			m_font.setStyleHint(QFont::Monospace);
+			m_font.setKerning(false);
 
 			// Set the default config
 			m_display_config.m_lineSpacing = DEFAULT_LINE_SPACING;
@@ -403,7 +419,7 @@ namespace HuxApp
 		case Terminal::ScreenType::INFORMATION:
 			// NOTE: values taken from AO source code, will need to make it adaptable
 			view.m_text_item->setPos(m_internal->m_display_config.m_horizontalMargin, m_internal->m_display_config.m_verticalMargin);
-			view.m_text_item->setTextWidth(TERMINAL_WIDTH - (2 * m_internal->m_display_config.m_horizontalMargin));
+			view.m_text_item->setTextWidth(-1); // No need to limit width, line wrapping is provided via custom logic
 			break;
 		case Terminal::ScreenType::PICT:
 		case Terminal::ScreenType::CHECKPOINT:
@@ -422,7 +438,7 @@ namespace HuxApp
 
 			// Reposition text
 			view.m_text_item->setPos(horizontal_offset, TERMINAL_BORDER_HEIGHT);
-			view.m_text_item->setTextWidth((TERMINAL_WIDTH * 0.5) - TERMINAL_BORDER_HEIGHT);
+			view.m_text_item->setTextWidth(-1); // No need to limit width, line wrapping is provided via custom logic
 			break;
 		}
 		}

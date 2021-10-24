@@ -113,11 +113,12 @@ namespace HuxApp
 			"$i",
 			"$U",
 			"$u",
-			"\\$C(?<color>[0-7])"
+			"$C[0-7]"
 		};
 
 		// Regexp for finding color tags
-		const QRegularExpression AO_COLOR_REGEXP = QRegularExpression(AO_FORMATTING_TAG_ARRAY[Utils::to_integral(TextFormattingTags::TEXT_COLOR)]);
+		const QRegularExpression AO_COLOR_REGEXP = QRegularExpression(R"(\$C(?<color>[0-7]))");
+		const QRegularExpression AO_LINE_SEP_REGEXP = QRegularExpression(R"([ &*\+\-<=>\/^|])");
 
 		// HTML tags in Hux output
 		constexpr const char* HTML_TAG_ARRAY[Utils::to_integral(TextFormattingTags::TAG_COUNT)] = {
@@ -269,7 +270,216 @@ namespace HuxApp
 				terminal_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::INTRALEVEL_TELEPORT), QString::number(teleport_info.m_index));
 				break;
 			}
-		}		
+		}	
+
+		int get_screen_character_limit(Terminal::ScreenType screen_type)
+		{
+			switch (screen_type)
+			{
+			case Terminal::ScreenType::INFORMATION:
+				return 70;
+			case Terminal::ScreenType::PICT:
+			case Terminal::ScreenType::CHECKPOINT:
+				return 44;
+			}
+
+			return -1;
+		}
+
+		bool is_separator_character(QChar character)
+		{
+			const QRegularExpressionMatch match = AO_LINE_SEP_REGEXP.match(character);
+			return match.hasMatch();
+		}
+
+		QString get_tag_regex_string()
+		{
+			QStringList tagRegexList;
+			for (int current_tag_index = 0; current_tag_index < Utils::to_integral(TextFormattingTags::TAG_COUNT); ++current_tag_index)
+			{
+				tagRegexList << QStringLiteral("(\\%1)").arg(AO_FORMATTING_TAG_ARRAY[current_tag_index]);
+			}
+			return tagRegexList.join('|');
+		}
+
+		const QRegularExpression& get_tag_regex()
+		{
+			// Create a RegEx that can match the AO formatting tags 
+			static QRegularExpression tag_regex(get_tag_regex_string());
+			return tag_regex;
+		}
+
+		void wrap_line(const QString& line, Terminal::ScreenType screen_type, QStringList& wrapped_lines)
+		{
+			const QRegularExpression& tag_regex = get_tag_regex();
+
+			// Use a struct to store the tag contents
+			struct FormattingTag
+			{
+				QString m_tag;
+				int m_offset = -1;
+			};
+
+			std::vector<FormattingTag> formatting_tags;
+
+			// Filter out the tags from the line
+			QString filtered_line = line;
+			QRegularExpressionMatch tag_match = tag_regex.match(filtered_line, 0, QRegularExpression::MatchType::PartialPreferFirstMatch);
+
+			while (tag_match.hasMatch())
+			{
+				// Found a tag, cache it and remove from processed string
+				FormattingTag& found_tag = formatting_tags.emplace_back();
+
+				const int last_captured_index = tag_match.lastCapturedIndex();
+				found_tag.m_offset = tag_match.capturedStart(last_captured_index); // Make sure the offset takes into account that tags will be re-added before this one
+				found_tag.m_tag = filtered_line.mid(found_tag.m_offset, tag_match.capturedLength(last_captured_index));
+				filtered_line.remove(found_tag.m_offset, tag_match.capturedLength(last_captured_index));
+
+				// Check if we have any more tags (starting from the offset we found, since we removed the tag itself)
+				tag_match = tag_regex.match(filtered_line, found_tag.m_offset, QRegularExpression::MatchType::PartialPreferFirstMatch);
+			}
+
+			// Traverse the filtered line and wrap based on line length
+			QStringList filtered_wrapped_lines;
+			{
+				int current_line_start = 0;
+				int current_line_end = 0;
+				const int character_limit = get_screen_character_limit(screen_type);
+				while (true)
+				{
+					if (current_line_end == filtered_line.length())
+					{
+						// Add whatever else was left and end the loop
+						filtered_wrapped_lines << filtered_line.mid(current_line_start);
+						break;
+					}
+
+					const int current_length = current_line_end - current_line_start;
+					if (current_length == character_limit)
+					{
+						// Reached the character limit, check if the end char is a space
+						if (filtered_line[current_line_end] == ' ')
+						{
+							// Include this extra space and wrap here
+							++current_line_end;
+						}
+						else
+						{
+							// Go back and see where we can wrap
+							int wrap_index = (current_line_end - 1);
+							for (; wrap_index > current_line_start; --wrap_index)
+							{
+								const QChar wrap_char = filtered_line[wrap_index];
+								if (is_separator_character(wrap_char))
+								{
+									// Found a separator
+									current_line_end = (wrap_index + 1);
+									break;
+								}
+							}
+							assert(wrap_index >= 0);
+						}
+
+						// Add the line (if we didn't find a place to wrap, we'll simply wrap at the character limit)
+						filtered_wrapped_lines << filtered_line.mid(current_line_start, (current_line_end - current_line_start));
+						current_line_start = current_line_end;
+					}
+					else
+					{
+						++current_line_end;
+					}
+				}
+			}
+
+			if (!formatting_tags.empty())
+			{
+				// Iterate over our strings and re-insert the tags
+				int total_character_count = 0;
+				auto formatting_tag_it = formatting_tags.begin();
+
+				for (const QString& current_wrapped_line : filtered_wrapped_lines)
+				{
+					if (formatting_tag_it != formatting_tags.end())
+					{
+						QString finalized_wrapped_line;
+						int current_char_offset = 0;
+						while (current_char_offset < current_wrapped_line.length())
+						{
+							if (total_character_count == formatting_tag_it->m_offset)
+							{
+								finalized_wrapped_line += formatting_tag_it->m_tag;
+								++formatting_tag_it;
+								if (formatting_tag_it == formatting_tags.end())
+								{
+									// Finished adding all tags, just add the rest of the string
+									finalized_wrapped_line += current_wrapped_line.mid(current_char_offset);
+									break;
+								}
+								// Go again (may return in case multiple tags were at the same offset)
+								continue;
+							}
+							// Add the current character and update the offsets
+							finalized_wrapped_line += current_wrapped_line[current_char_offset];
+							++total_character_count;
+							++current_char_offset;
+						}
+						wrapped_lines << finalized_wrapped_line;
+					}
+					else
+					{
+						// No more tags, just add the rest of the lines
+						wrapped_lines << current_wrapped_line;
+					}
+				}
+
+				// If any tags were left, we add them to the end of the last line
+				if (formatting_tag_it != formatting_tags.end())
+				{
+					if (wrapped_lines.isEmpty())
+					{
+						// Add an empty string, just in case this is a completely empty line with just formatting tags in it
+						wrapped_lines << QString();
+					}
+					for (formatting_tag_it; formatting_tag_it != formatting_tags.end(); ++formatting_tag_it)
+					{
+						wrapped_lines.back() += formatting_tag_it->m_tag;
+					}
+				}
+			}
+			else
+			{
+				// No tags to process, add lines verbatim
+				wrapped_lines << filtered_wrapped_lines;
+			}
+		}
+
+		QString wrap_ao_text(const QString& ao_text, Terminal::ScreenType screen_type)
+		{
+			if (ao_text.isEmpty())
+			{
+				return QString();
+			}
+
+			// First split the line along line breaks
+			const QStringList lines = ao_text.split('\n');
+			QStringList wrapped_lines;
+
+			for (const QString& current_line : lines)
+			{
+				if (!current_line.isEmpty())
+				{
+					wrap_line(current_line, screen_type, wrapped_lines);
+				}
+				else
+				{
+					// Empty line, add it so we don't miss any line breaks
+					wrapped_lines << current_line;
+				}
+			}
+
+			return wrapped_lines.join('\n');
+		}
 	}
 
 	class ScenarioManager::ScriptParser
@@ -481,7 +691,7 @@ namespace HuxApp
 					{
 						// Was parsing info for a valid screen, and we hit a new keyword, so we can now store this screen
 						current_screen.m_script.chop(1); // Parsing will add a redundant endline at the very end, remove it
-						current_screen.m_display_text = convert_ao_to_html(current_screen.m_script);
+						current_screen.m_display_text = convert_ao_to_html(current_screen.m_script, Utils::to_integral(current_screen.m_type));
 						screen_vec.push_back(current_screen);
 						current_screen.reset();
 						current_screen.m_comments = m_comment_buffer; // All comments up to this point will be interpreted as for this screen
@@ -688,7 +898,7 @@ namespace HuxApp
 			screen.m_script = screen_json["SCRIPT"].toString();
 
 			// Have to parse the script to get the display text
-			screen.m_display_text = convert_ao_to_html(screen.m_script);
+			screen.m_display_text = convert_ao_to_html(screen.m_script, Utils::to_integral(screen.m_type));
 		}
 
 		static void deserialize_terminal_json(const QJsonObject& terminal_json, Terminal& terminal)
@@ -890,7 +1100,8 @@ namespace HuxApp
 
 			for (const QFileInfo& current_file : file_info_list)
 			{
-				if (current_file.completeSuffix() == "term.txt")
+				const QString file_name = current_file.fileName();
+				if (file_name.endsWith(".term.txt"))
 				{
 					// We found a terminal script, parse it
 					Level parsed_level;
@@ -945,10 +1156,13 @@ namespace HuxApp
 		}
 	}
 
-	QString ScenarioManager::convert_ao_to_html(const QString& ao_text)
+	QString ScenarioManager::convert_ao_to_html(const QString& ao_text, int screen_type)
 	{
+		// Wrap the text (so it matches the AO line wrapping)
+		const QString wrapped_text = wrap_ao_text(ao_text, Utils::to_enum<Terminal::ScreenType>(screen_type));
+
 		// Parse the Aleph One formatting tags, turning them into HTML tags that Qt can display
-		QString parsed_text = ao_text.toHtmlEscaped(); // First make sure we have no unintended HTML tags
+		QString parsed_text = wrapped_text.toHtmlEscaped(); // First make sure we have no unintended HTML tags
 		bool color_changed = false;
 
 		// Iterate through each possible tag, converting each match

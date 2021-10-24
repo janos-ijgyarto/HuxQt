@@ -24,6 +24,7 @@ namespace HuxApp
         void connect_signals();
         void clear_preview_display();
         void reset_ui();
+        void update_title(const QString& text = QString());
 
         // Menu
         void open_scenario();

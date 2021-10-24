@@ -176,7 +176,7 @@ namespace HuxApp
     {
         if (m_text_dirty)
         {
-            m_screen_data.m_display_text = ScenarioManager::convert_ao_to_html(m_screen_data.m_script);
+            m_screen_data.m_display_text = ScenarioManager::convert_ao_to_html(m_screen_data.m_script, Utils::to_integral(m_screen_data.m_type));
             m_text_dirty = false;
         }
     }

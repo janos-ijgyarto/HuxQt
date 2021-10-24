@@ -44,7 +44,7 @@ namespace HuxApp
 		void set_screen_clipboard(const Terminal& terminal_data);
 		void clear_screen_clipboard();
 
-		static QString convert_ao_to_html(const QString& ao_text);
+		static QString convert_ao_to_html(const QString& ao_text, int screen_type);
 		static QString export_hux_formatted_text(const QString& formatted_text);
 	private:
 		ScenarioManager(AppCore& core);
