@@ -16,6 +16,7 @@ namespace HuxApp
 	namespace
 	{
 		constexpr const char* TERMINAL_SCRIPT_CODEC = "UTF-8";
+		constexpr const char* TERMINAL_SCRIPT_SUFFIX = ".term.txt";
 
 		enum class ScriptKeywords
 		{
@@ -1102,13 +1103,17 @@ namespace HuxApp
 			{
 				// Need to check the end to make sure we catch the correct suffix (using the QFileInfo helper func might return an incorrect suffix)
 				const QString file_name = current_file.fileName();
-				if (file_name.endsWith(".term.txt"))
+				if (file_name.endsWith(TERMINAL_SCRIPT_SUFFIX))
 				{
 					// We found a terminal script, parse it
 					Level parsed_level;
-					parsed_level.m_name = current_file.baseName();
+
+					// Remove the suffix (should preserve the name in case someone put periods into it)
+					parsed_level.m_name = file_name;
+					parsed_level.m_name.remove(TERMINAL_SCRIPT_SUFFIX);
+
 					parsed_level.m_dir_name = level_dir_name;
-					parsed_level.m_script_name = current_file.baseName();
+					parsed_level.m_script_name = parsed_level.m_name;
 					ScriptParser parser(parsed_level);
 					if (parser.parse_level(current_file))
 					{
