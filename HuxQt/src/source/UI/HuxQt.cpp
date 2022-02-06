@@ -376,7 +376,10 @@ namespace HuxApp
         connect(m_internal->m_ui.scenario_browser, &ScenarioBrowserView::edit_level, this, &HuxQt::edit_level);
         connect(m_internal->m_ui.scenario_browser, &ScenarioBrowserView::terminal_selected, this, &HuxQt::terminal_selected);
         connect(m_internal->m_ui.scenario_browser, &ScenarioBrowserView::terminal_opened, this, &HuxQt::terminal_opened);
+        
         connect(&m_internal->m_scenario_browser_model, &ScenarioBrowserModel::scenario_modified, this, &HuxQt::scenario_modified);
+        connect(&m_internal->m_scenario_browser_model, &ScenarioBrowserModel::terminal_modified, this, &HuxQt::terminal_modified);
+        connect(&m_internal->m_scenario_browser_model, &ScenarioBrowserModel::terminals_removed, this, &HuxQt::terminals_removed);
 
         // Screen browser
         connect(m_internal->m_ui.screen_browser_tree, &QTreeWidget::currentItemChanged, this, &HuxQt::screen_item_selected);
@@ -682,6 +685,31 @@ namespace HuxApp
             // Jump to the last child
             QTreeWidgetItem* parent_item = current_screen->parent();
             m_internal->m_ui.screen_browser_tree->setCurrentItem(parent_item->child(parent_item->childCount() - 1));
+        }
+    }
+
+    void HuxQt::terminal_modified(int level_id, int terminal_id)
+    {
+        const TerminalID modified_terminal_id{ level_id, terminal_id };
+        if (m_internal->m_selected_terminal == modified_terminal_id)
+        {
+            // Reset terminal preview by re-selecting it
+            m_internal->m_selected_terminal.invalidate();
+            terminal_selected(level_id, terminal_id);
+        }
+    }
+
+    void HuxQt::terminals_removed(int level_id, const QList<int>& terminal_ids)
+    {
+        for (int current_terminal_id : terminal_ids)
+        {
+            const TerminalID removed_terminal_id{ level_id, current_terminal_id };
+            if (m_internal->m_selected_terminal == removed_terminal_id)
+            {
+                // Reset terminal UI
+                m_internal->reset_terminal_ui();
+                m_internal->m_selected_terminal.invalidate();
+            }
         }
     }
 

@@ -49,6 +49,8 @@ namespace HuxApp
         void terminal_prev_clicked();
         void terminal_next_clicked();
         void terminal_last_clicked();
+        void terminal_modified(int level_id, int terminal_id);
+        void terminals_removed(int level_id, const QList<int>& terminal_ids);
 
         // Misc.
         void terminal_editor_closed(QObject* object);

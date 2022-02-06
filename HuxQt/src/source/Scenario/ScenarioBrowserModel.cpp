@@ -252,7 +252,7 @@ namespace HuxApp
 		}
 
 		// Signal listeners
-		emit(terminals_removed(removed_indices));
+		emit(terminals_removed(m_id, removed_indices));
 		level_modified_internal();
 	}
 
@@ -538,6 +538,7 @@ namespace HuxApp
 			if (LevelModel* level_model = get_level_model(terminal_id.m_level_id))
 			{
 				level_model->update_terminal_data(terminal_id, data);
+				terminal_modified(terminal_id.m_level_id, terminal_id.m_terminal_id);
 			}
 		}
 	}
@@ -601,6 +602,7 @@ namespace HuxApp
 		m_level_list_model.appendRow(level_standard_item);
 
 		connect(&level_model, &LevelModel::level_modified, this, &ScenarioBrowserModel::level_modified);
+		connect(&level_model, &LevelModel::terminals_removed, this, &ScenarioBrowserModel::terminals_removed);
 
 		return level_standard_item;
 	}

@@ -942,6 +942,9 @@ namespace HuxApp
 
     void TerminalEditorWindow::add_screen_clicked()
     {
+        // Save the previous screen's data (if applicable)
+        m_internal->save_screen_changes();
+
         // Add a new screen
         QList<QListWidgetItem*> selected_screens = m_internal->get_selected_screens();
         const int selected_index = selected_screens.isEmpty() ? m_internal->m_ui.screen_browser_view->count() : m_internal->get_screen_item_index(selected_screens.front());
@@ -964,6 +967,9 @@ namespace HuxApp
         QList<QListWidgetItem*> selected_screens = m_internal->get_selected_screens();
         if (!selected_screens.isEmpty())
         {
+            // Save the previous screen's data (if applicable)
+            m_internal->save_screen_changes();
+
             std::vector<int> selected_screen_indices;
 
             for (QListWidgetItem* current_screen_item : selected_screens)
@@ -1006,7 +1012,7 @@ namespace HuxApp
         }
     }
 
-    void TerminalEditorWindow::terminals_removed(const QList<int>& terminal_ids)
+    void TerminalEditorWindow::terminals_removed(int level_id, const QList<int>& terminal_ids)
     {
         if (terminal_ids.indexOf(m_internal->m_terminal_id.m_terminal_id) >= 0)
         {

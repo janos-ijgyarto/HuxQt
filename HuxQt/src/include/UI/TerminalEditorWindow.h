@@ -55,7 +55,7 @@ namespace HuxApp
 
 		// Misc.
 		void update_edit_notification();
-		void terminals_removed(const QList<int>& terminal_ids);
+		void terminals_removed(int level_id, const QList<int>& terminal_ids);
 
 		AppCore& m_core;
 

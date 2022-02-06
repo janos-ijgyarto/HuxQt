@@ -51,7 +51,7 @@ namespace HuxApp
 		void clear_modified();
 	signals:
 		void level_modified(int id);
-		void terminals_removed(const QList<int>& terminal_ids);
+		void terminals_removed(int level_id, const QList<int>& terminal_ids);
 	private:
 		void connect_signals();
 
@@ -125,6 +125,8 @@ namespace HuxApp
 	signals:
 		void scenario_name_changed();
 		void scenario_modified();
+		void terminal_modified(int level_id, int terminal_id);
+		void terminals_removed(int level_id, const QList<int>& terminal_ids);
 	private:
 		void clear_internal();
 
