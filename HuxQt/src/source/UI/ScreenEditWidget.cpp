@@ -259,6 +259,7 @@ namespace HuxApp
     {
         if (index != Utils::to_integral(m_screen_data.m_type))
         {
+            m_text_dirty = true; // Changing screen type might require that the text get re-aligned
             m_screen_data.m_type = static_cast<Terminal::ScreenType>(index);
             update_controls(m_screen_data.m_type); // We changed the screen type, so we need to make sure the correct controls are available
             screen_edited_internal(true);

@@ -22,11 +22,12 @@ namespace HuxApp
 
 		struct DisplayConfig
 		{
-			qreal m_lineSpacing = 0;
-			qreal m_wordSpacing = 0;
-			qreal m_letterSpacing = 0;
-			qreal m_horizontalMargin = 0;
-			qreal m_verticalMargin = 0;
+			qreal m_line_spacing = 0;
+			qreal m_word_spacing = 0;
+			qreal m_letter_spacing = 0;
+			qreal m_horizontal_margin = 0;
+			qreal m_vertical_margin = 0;
+			bool m_show_line_numbers = true;
 		};
 
 		~DisplaySystem();
@@ -50,7 +51,6 @@ namespace HuxApp
 		DisplaySystem(AppCore& core);
 		void update_image(ViewData& view, const DisplayData& data);
 		void update_text(ViewData& view, const DisplayData& data);
-		void update_line_spacing(ViewData& view);
 
 		struct Internal;
 		std::unique_ptr<Internal> m_internal;

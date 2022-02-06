@@ -13,7 +13,7 @@ namespace HuxApp
 		// Values taken directly from Aleph One source code :(
 		constexpr qreal TERMINAL_WIDTH = 640.0;
 		constexpr qreal TERMINAL_HEIGHT = 320.0;
-		constexpr qreal TERMINAL_BORDER_HEIGHT = 18;
+		constexpr qreal TERMINAL_BORDER = 18;
 
 		// Value taken from the game
 		constexpr int SCREEN_MAX_LINES = 22;
@@ -26,6 +26,9 @@ namespace HuxApp
 		constexpr qreal DEFAULT_LETTER_SPACING = -1.25;
 		constexpr qreal DEFAULT_HORIZONTAL_MARGIN = 72;
 		constexpr qreal DEFAULT_VERTICAL_MARGIN = 27;
+
+		constexpr qreal LINE_NUMBER_LEFT_OFFSET = 1.0;
+		constexpr qreal LINE_NUMBER_RIGHT_OFFSET = TERMINAL_BORDER - 2.0;
 
 		constexpr const char* MISSING_RESOURCE_IMAGE = ":/HuxQt/missing.png";
 		constexpr const char* STATIC_SCREEN_IMAGE = ":/HuxQt/static.png";
@@ -81,6 +84,7 @@ namespace HuxApp
 
 		QGraphicsPixmapItem* m_image_item = nullptr;
 		QGraphicsTextItem* m_text_item = nullptr;
+		QGraphicsTextItem* m_line_numbers = nullptr;
 	};
 
 	struct DisplaySystem::Internal
@@ -94,11 +98,11 @@ namespace HuxApp
 			m_font.setKerning(false);
 
 			// Set the default config
-			m_display_config.m_lineSpacing = DEFAULT_LINE_SPACING;
-			m_display_config.m_wordSpacing = DEFAULT_WORD_SPACING;
-			m_display_config.m_letterSpacing = DEFAULT_LETTER_SPACING;
-			m_display_config.m_horizontalMargin = DEFAULT_HORIZONTAL_MARGIN;
-			m_display_config.m_verticalMargin = DEFAULT_VERTICAL_MARGIN;
+			m_display_config.m_line_spacing = DEFAULT_LINE_SPACING;
+			m_display_config.m_word_spacing = DEFAULT_WORD_SPACING;
+			m_display_config.m_letter_spacing = DEFAULT_LETTER_SPACING;
+			m_display_config.m_horizontal_margin = DEFAULT_HORIZONTAL_MARGIN;
+			m_display_config.m_vertical_margin = DEFAULT_VERTICAL_MARGIN;
 
 			update_config();
 		}
@@ -109,11 +113,11 @@ namespace HuxApp
 			view_data.m_scene.setBackgroundBrush(QBrush(get_display_color(DisplayColors::BACKGROUND)));
 
 			// Add top and bottom rectangles
-			QGraphicsRectItem* border_rect = view_data.m_scene.addRect(0, 0, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
+			QGraphicsRectItem* border_rect = view_data.m_scene.addRect(0, 0, TERMINAL_WIDTH, TERMINAL_BORDER);
 			border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
 			border_rect->setZValue(3);
 
-			border_rect = view_data.m_scene.addRect(0, TERMINAL_HEIGHT - TERMINAL_BORDER_HEIGHT, TERMINAL_WIDTH, TERMINAL_BORDER_HEIGHT);
+			border_rect = view_data.m_scene.addRect(0, TERMINAL_HEIGHT - TERMINAL_BORDER, TERMINAL_WIDTH, TERMINAL_BORDER);
 			border_rect->setBrush(QBrush(get_display_color(DisplayColors::BORDER)));
 			border_rect->setZValue(3);
 
@@ -128,6 +132,27 @@ namespace HuxApp
 			// Set the image item
 			view_data.m_image_item = view_data.m_scene.addPixmap(QPixmap());
 			view_data.m_image_item->setZValue(1);
+
+			// Set the line number item
+			{
+				QStringList line_number_list;
+				for (int current_line_number = 1; current_line_number <= SCREEN_MAX_LINES; ++current_line_number)
+				{
+					line_number_list << QString::number(current_line_number);
+				}
+				line_number_list << "=";
+
+				view_data.m_line_numbers = view_data.m_scene.addText(line_number_list.join("\n"));
+
+				view_data.m_line_numbers->setPos(LINE_NUMBER_LEFT_OFFSET, DEFAULT_VERTICAL_MARGIN);
+				view_data.m_line_numbers->setFont(m_font);
+				view_data.m_line_numbers->setZValue(2);
+				view_data.m_line_numbers->setDefaultTextColor(get_display_color(DisplayColors::TEXT));
+
+				update_line_spacing(view_data.m_line_numbers);
+
+				view_data.m_line_numbers->setVisible(false);
+			}
 		}
 
 		QPixmap get_pict(int pict_id) const
@@ -149,13 +174,26 @@ namespace HuxApp
 
 		void update_config()
 		{
-			m_font.setWordSpacing(m_display_config.m_wordSpacing);
-			m_font.setLetterSpacing(QFont::AbsoluteSpacing, m_display_config.m_letterSpacing);
+			// Update the fonts
+			m_font.setWordSpacing(m_display_config.m_word_spacing);
+			m_font.setLetterSpacing(QFont::AbsoluteSpacing, m_display_config.m_letter_spacing);
 
 			for (auto& current_view_pair : m_view_data_lookup)
 			{
-				current_view_pair.second.m_text_item->setFont(m_font);
+				ViewData& view_data = current_view_pair.second;
+				view_data.m_text_item->setFont(m_font);
+				view_data.m_line_numbers->setFont(m_font);
 			}
+		}
+
+		void update_line_spacing(QGraphicsTextItem* item)
+		{
+			QTextBlockFormat format;
+			format.setLineHeight(m_display_config.m_line_spacing, QTextBlockFormat::LineDistanceHeight);
+
+			QTextCursor doc_cursor(item->document());
+			doc_cursor.select(QTextCursor::Document);
+			doc_cursor.mergeBlockFormat(format);
 		}
 
 		// Cache for PICT resources used in terminals
@@ -280,7 +318,16 @@ namespace HuxApp
 
 	const DisplaySystem::DisplayConfig& DisplaySystem::get_display_config() const { return m_internal->m_display_config; }
 
-	void DisplaySystem::set_display_config(const DisplayConfig& config) { m_internal->apply_display_config(config); }
+	void DisplaySystem::set_display_config(const DisplayConfig& config) 
+	{	
+		m_internal->apply_display_config(config); 
+
+		for (auto& current_view_pair : m_internal->m_view_data_lookup)
+		{
+			ViewData& current_view_data = current_view_pair.second;
+			update_text(current_view_data, current_view_data.m_display_data);
+		}
+	}
 
 	const QMap<int, QString>& DisplaySystem::get_pict_cache() const { return m_internal->m_pict_path_cache; }
 
@@ -367,20 +414,24 @@ namespace HuxApp
 			{
 				// Do not display centered PICT text!
 				view.m_text_item->setVisible(false);
+				view.m_line_numbers->setVisible(false);
 				return;
 			}
 			else
 			{
 				view.m_text_item->setVisible(true);
+				view.m_line_numbers->setVisible(m_internal->m_display_config.m_show_line_numbers);
 			}
 		}
 		break;
 		case Terminal::ScreenType::TAG:
 		case Terminal::ScreenType::STATIC:
 			view.m_text_item->setVisible(false);
+			view.m_line_numbers->setVisible(false);
 			return;
 		default:
-			view.m_text_item->setVisible(true);
+			view.m_text_item->setVisible(true); 
+			view.m_line_numbers->setVisible(m_internal->m_display_config.m_show_line_numbers);
 			break;
 		}
 
@@ -389,18 +440,27 @@ namespace HuxApp
 		view.m_text_item->setHtml(view.m_display_data.m_text);
 
 		// Set alignment
-		QTextOption textOption = view.m_text_item->document()->defaultTextOption();
-		switch (data.m_screen_type)
 		{
-		case Terminal::ScreenType::LOGON:
-		case Terminal::ScreenType::LOGOFF:
-			textOption.setAlignment(Qt::AlignCenter);
-			break;
-		default:
-			textOption.setAlignment(Qt::AlignLeft);
-			break;
+			QTextOption text_option = view.m_text_item->document()->defaultTextOption();
+			switch (data.m_screen_type)
+			{
+			case Terminal::ScreenType::LOGON:
+			case Terminal::ScreenType::LOGOFF:
+				text_option.setAlignment(Qt::AlignCenter);
+				view.m_line_numbers->setVisible(false); // Also make sure we don't show line numbers for these screens
+				break;
+			default:
+				text_option.setAlignment(Qt::AlignLeft);
+				break;
+			}
+			view.m_text_item->document()->setDefaultTextOption(text_option); 
 		}
-		view.m_text_item->document()->setDefaultTextOption(textOption);
+
+		QPointF line_number_position(m_internal->m_display_config.m_horizontal_margin / 2, m_internal->m_display_config.m_vertical_margin);
+		QTextOption line_number_text_option = view.m_line_numbers->document()->defaultTextOption();
+		line_number_text_option.setAlignment(Qt::AlignRight);
+
+		QPointF text_position;
 
 		// Reposition according to type
 		switch (data.m_screen_type)
@@ -409,51 +469,49 @@ namespace HuxApp
 		case Terminal::ScreenType::LOGOFF:
 		{
 			// Use maximum available width (text will be centered horizontally)
-			view.m_text_item->setTextWidth(TERMINAL_WIDTH - (2 * m_internal->m_display_config.m_horizontalMargin));
+			view.m_text_item->setTextWidth(TERMINAL_WIDTH - (2 * m_internal->m_display_config.m_horizontal_margin));
 
 			// Set center, below image
 			const QRectF image_rect = view.m_image_item->boundingRect();
-			view.m_text_item->setPos(m_internal->m_display_config.m_horizontalMargin, (TERMINAL_HEIGHT + image_rect.height()) * 0.5);
+			text_position = QPointF(m_internal->m_display_config.m_horizontal_margin, (TERMINAL_HEIGHT + image_rect.height()) * 0.5);
 		}
 			break;
 		case Terminal::ScreenType::INFORMATION:
 			// NOTE: values taken from AO source code, will need to make it adaptable
-			view.m_text_item->setPos(m_internal->m_display_config.m_horizontalMargin, m_internal->m_display_config.m_verticalMargin);
+			text_position = QPointF(m_internal->m_display_config.m_horizontal_margin, m_internal->m_display_config.m_vertical_margin);
 			view.m_text_item->setTextWidth(-1); // No need to limit width, line wrapping is provided via custom logic
 			break;
 		case Terminal::ScreenType::PICT:
 		case Terminal::ScreenType::CHECKPOINT:
 		{
 			// Check alignment (text must be opposite the image)
-			qreal horizontal_offset = 0;
 			switch (data.m_alignment)
 			{
 			case Terminal::ScreenAlignment::LEFT:
-				horizontal_offset = TERMINAL_WIDTH * 0.5;
+				text_position.setX(TERMINAL_WIDTH * 0.5);
+				line_number_position.setX(TERMINAL_WIDTH - LINE_NUMBER_RIGHT_OFFSET); // Make sure line numbers appear close to the text
+				line_number_text_option.setAlignment(Qt::AlignLeft);
 				break;
 			case Terminal::ScreenAlignment::RIGHT:
-				horizontal_offset = TERMINAL_BORDER_HEIGHT;
+				text_position.setX(TERMINAL_BORDER);
+				line_number_position.setX(LINE_NUMBER_LEFT_OFFSET);
 				break;
 			}
 
-			// Reposition text
-			view.m_text_item->setPos(horizontal_offset, TERMINAL_BORDER_HEIGHT);
+			text_position.setY(TERMINAL_BORDER);
+			line_number_position.setY(TERMINAL_BORDER);
 			view.m_text_item->setTextWidth(-1); // No need to limit width, line wrapping is provided via custom logic
 			break;
 		}
 		}
 
+		view.m_line_numbers->setPos(line_number_position);
+		view.m_line_numbers->document()->setDefaultTextOption(line_number_text_option);
+
+		view.m_text_item->setPos(text_position);
+
 		// Have to do this to make sure the line spacing is correct (might be redundant?)
-		update_line_spacing(view);
-	}
-
-	void DisplaySystem::update_line_spacing(ViewData& view)
-	{
-		QTextBlockFormat format;
-		format.setLineHeight(m_internal->m_display_config.m_lineSpacing, QTextBlockFormat::LineDistanceHeight);
-
-		QTextCursor doc_cursor(view.m_text_item->document());
-		doc_cursor.select(QTextCursor::Document);
-		doc_cursor.mergeBlockFormat(format);
+		m_internal->update_line_spacing(view.m_text_item);
+		m_internal->update_line_spacing(view.m_line_numbers);
 	}
 }

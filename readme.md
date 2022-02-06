@@ -102,6 +102,8 @@ When a screen is selected in the [Screen Browser](#screen-browser), the editor v
 
 Any changes made to the screen contents will automatically update the preview.
 
+The page also shows line numbers to help keep track of how close the text content is to the line limit.
+
 If a screen's text content exceeds the line limit for a single page, the preview display will show a page counter. The counter's value corresponds to the (estimated) number of pages into which the engine will break up the text.
 
 - Previews for the page breaking is currently not yet implemented. It's recommended that you do not let the text exceed the line limit, as this allows for less precise control over the text layout.

@@ -14,24 +14,10 @@
    <string>Terminal Preview Config</string>
   </property>
   <layout class="QGridLayout" name="main_grid" columnstretch="0,1">
-   <item row="1" column="1">
-    <widget class="QDoubleSpinBox" name="word_spacing_spinbox">
-     <property name="minimum">
-      <double>-99.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="line_spacing_label">
+   <item row="4" column="0">
+    <widget class="QLabel" name="vertical_margin_label">
      <property name="text">
-      <string>Line spacing:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QDoubleSpinBox" name="line_spacing_spinbox">
-     <property name="minimum">
-      <double>-99.000000000000000</double>
+      <string>Vertical margin:</string>
      </property>
     </widget>
    </item>
@@ -42,13 +28,20 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QDoubleSpinBox" name="horizontal_margin_spinbox"/>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="letter_spacing_label">
+   <item row="3" column="0">
+    <widget class="QLabel" name="horizontal_margin_label">
      <property name="text">
-      <string>Letter spacing:</string>
+      <string>Horizontal margin:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QDoubleSpinBox" name="vertical_margin_spinbox"/>
+   </item>
+   <item row="0" column="1">
+    <widget class="QDoubleSpinBox" name="line_spacing_spinbox">
+     <property name="minimum">
+      <double>-99.000000000000000</double>
      </property>
     </widget>
    </item>
@@ -59,22 +52,42 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="horizontal_margin_label">
+   <item row="3" column="1">
+    <widget class="QDoubleSpinBox" name="horizontal_margin_spinbox"/>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="line_spacing_label">
      <property name="text">
-      <string>Horizontal margin:</string>
+      <string>Line spacing:</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="vertical_margin_label">
+   <item row="2" column="0">
+    <widget class="QLabel" name="letter_spacing_label">
      <property name="text">
-      <string>Vertical margin:</string>
+      <string>Letter spacing:</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QDoubleSpinBox" name="vertical_margin_spinbox"/>
+   <item row="1" column="1">
+    <widget class="QDoubleSpinBox" name="word_spacing_spinbox">
+     <property name="minimum">
+      <double>-99.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QCheckBox" name="line_numbers_checkbox">
+     <property name="layoutDirection">
+      <enum>Qt::RightToLeft</enum>
+     </property>
+     <property name="text">
+      <string>Show line numbers:</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
