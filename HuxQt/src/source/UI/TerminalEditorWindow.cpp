@@ -553,7 +553,7 @@ namespace HuxApp
     {
         // Prompt in case we modified the terminal and did not click OK
         const QMessageBox::StandardButton user_response = prompt_save();
-        if ((user_response != QMessageBox::Yes) && (user_response != QMessageBox::YesToAll))
+        if (user_response == QMessageBox::Cancel)
         {
             // Stop the window from closing
             event->ignore();
@@ -900,6 +900,9 @@ namespace HuxApp
         if (m_internal->m_screen_browser_state == ScreenBrowserState::SCREEN_LIST)
         {
             m_internal->screen_items_moved();
+
+            // Make sure we register this as a change
+            terminal_data_modified();
         }
     }
 

@@ -25,7 +25,7 @@ namespace HuxApp
     namespace
     {
         constexpr int APP_VERSION_MAJOR = 0;
-        constexpr int APP_VERSION_MINOR = 6;
+        constexpr int APP_VERSION_MINOR = 7;
         constexpr int APP_VERSION_PATCH = 0;
 
         constexpr const char* TELEPORT_TYPE_LABELS[Utils::to_integral(Terminal::TeleportType::TYPE_COUNT)] =
