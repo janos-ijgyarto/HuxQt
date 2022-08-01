@@ -119,7 +119,7 @@ namespace HuxApp
 
 		// Regexp for finding color tags
 		const QRegularExpression AO_COLOR_REGEXP = QRegularExpression(R"(\$C(?<color>[0-7]))");
-		const QRegularExpression AO_LINE_SEP_REGEXP = QRegularExpression(R"([ &*\+\-<=>\/^|])");
+		const QRegularExpression AO_LINE_SEP_REGEXP = QRegularExpression(R"([&*\+\-<=>\/^|])");
 
 		// HTML tags in Hux output
 		constexpr const char* HTML_TAG_ARRAY[Utils::to_integral(TextFormattingTags::TAG_COUNT)] = {
@@ -281,7 +281,7 @@ namespace HuxApp
 				return 70;
 			case Terminal::ScreenType::PICT:
 			case Terminal::ScreenType::CHECKPOINT:
-				return 44;
+				return 43;
 			}
 
 			return -1;
@@ -295,12 +295,12 @@ namespace HuxApp
 
 		QString get_tag_regex_string()
 		{
-			QStringList tagRegexList;
+			QStringList tag_regex_list;
 			for (int current_tag_index = 0; current_tag_index < Utils::to_integral(TextFormattingTags::TAG_COUNT); ++current_tag_index)
 			{
-				tagRegexList << QStringLiteral("(\\%1)").arg(AO_FORMATTING_TAG_ARRAY[current_tag_index]);
+				tag_regex_list << QStringLiteral("(\\%1)").arg(AO_FORMATTING_TAG_ARRAY[current_tag_index]);
 			}
-			return tagRegexList.join('|');
+			return tag_regex_list.join('|');
 		}
 
 		const QRegularExpression& get_tag_regex()
@@ -357,30 +357,27 @@ namespace HuxApp
 					}
 
 					const int current_length = current_line_end - current_line_start;
-					if (current_length == character_limit)
+					if (current_length > character_limit)
 					{
-						// Reached the character limit, check if the end char is a space
-						if (filtered_line[current_line_end] == ' ')
+						// Reached limit, go back and see where we can wrap
+						int wrap_index = (current_line_end - 1);
+						for (; wrap_index > current_line_start; --wrap_index)
 						{
-							// Include this extra space and wrap here
-							++current_line_end;
-						}
-						else
-						{
-							// Go back and see where we can wrap
-							int wrap_index = (current_line_end - 1);
-							for (; wrap_index > current_line_start; --wrap_index)
+							const QChar wrap_char = filtered_line[wrap_index];
+							if (wrap_char == ' ')
 							{
-								const QChar wrap_char = filtered_line[wrap_index];
-								if (is_separator_character(wrap_char))
-								{
-									// Found a separator
-									current_line_end = (wrap_index + 1);
-									break;
-								}
+								// Eat space
+								current_line_end = (wrap_index + 1);
+								break;
 							}
-							assert(wrap_index >= 0);
+							else if (is_separator_character(wrap_char))
+							{
+								// Found a separator, use as break point
+								current_line_end = wrap_index;
+								break;
+							}
 						}
+						assert(wrap_index >= 0);
 
 						// Add the line (if we didn't find a place to wrap, we'll simply wrap at the character limit)
 						filtered_wrapped_lines << filtered_line.mid(current_line_start, (current_line_end - current_line_start));
@@ -460,6 +457,13 @@ namespace HuxApp
 			if (ao_text.isEmpty())
 			{
 				return QString();
+			}
+			else if ((screen_type != Terminal::ScreenType::INFORMATION)
+				&& (screen_type != Terminal::ScreenType::PICT)
+				&& (screen_type != Terminal::ScreenType::CHECKPOINT))
+			{
+				// Only perform wrapping for screen types where it's relevant
+				return ao_text;
 			}
 
 			// First split the line along line breaks
@@ -1207,6 +1211,9 @@ namespace HuxApp
 			}
 			}
 		}
+
+		// Tabs in AO are a single space, so replace them
+		parsed_text.replace('\t', ' ');
 
 		// If the color was changed at some point, we need to close off the last span tag
 		if (color_changed)
