@@ -63,8 +63,55 @@ namespace HuxApp
         std::unordered_set<TerminalEditorWindow*> m_terminal_editors;
 
         PreviewConfigWindow* m_preview_config = nullptr;
+        QPalette m_dark_theme;
 
         DisplaySystem::ViewID m_view_id;
+
+        Internal()
+        {
+            prepare_dark_theme();
+        }
+
+        void prepare_dark_theme()
+        {
+            const QColor dark_gray(53, 53, 53);
+            const QColor gray(128, 128, 128);
+            const QColor black(25, 25, 25);
+            const QColor blue(42, 130, 218);
+
+            m_dark_theme.setColor(QPalette::Window, QColor(53, 53, 53));
+            m_dark_theme.setColor(QPalette::WindowText, Qt::white);
+            m_dark_theme.setColor(QPalette::Base, QColor(25, 25, 25));
+            m_dark_theme.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+            m_dark_theme.setColor(QPalette::ToolTipBase, Qt::black);
+            m_dark_theme.setColor(QPalette::ToolTipText, Qt::white);
+            m_dark_theme.setColor(QPalette::Text, Qt::white);
+            m_dark_theme.setColor(QPalette::Button, QColor(53, 53, 53));
+            m_dark_theme.setColor(QPalette::ButtonText, Qt::white);
+            m_dark_theme.setColor(QPalette::BrightText, Qt::red);
+            m_dark_theme.setColor(QPalette::Link, QColor(42, 130, 218));
+            m_dark_theme.setColor(QPalette::Highlight, QColor(42, 130, 218));
+            m_dark_theme.setColor(QPalette::HighlightedText, Qt::black);
+
+            m_dark_theme.setColor(QPalette::Active, QPalette::Button, gray.darker());
+            m_dark_theme.setColor(QPalette::Disabled, QPalette::ButtonText, gray);
+            m_dark_theme.setColor(QPalette::Disabled, QPalette::WindowText, gray);
+            m_dark_theme.setColor(QPalette::Disabled, QPalette::Text, gray);
+            m_dark_theme.setColor(QPalette::Disabled, QPalette::Light, dark_gray);
+        }
+
+        void set_app_theme()
+        {
+            const bool use_dark_theme = m_ui.action_use_dark_theme->isChecked();
+            if (use_dark_theme)
+            {
+                qApp->setPalette(m_dark_theme);
+            }
+            else
+            {
+                qApp->setPalette(QPalette());
+            }
+        }
 
         TerminalEditorWindow* find_terminal_editor(const TerminalID& terminal_id) const
         {
@@ -371,6 +418,7 @@ namespace HuxApp
         connect(m_internal->m_ui.action_export_scenario_scripts, &QAction::triggered, this, &HuxQt::export_scenario_scripts);
         connect(m_internal->m_ui.action_import_scenario_scripts, &QAction::triggered, this, &HuxQt::import_scenario_scripts);
         connect(m_internal->m_ui.action_terminal_preview_config, &QAction::triggered, this, &HuxQt::open_preview_config);
+        connect(m_internal->m_ui.action_use_dark_theme, &QAction::triggered, this, &HuxQt::set_app_theme);
 
         // Scenario browser
         connect(m_internal->m_ui.scenario_browser, &ScenarioBrowserView::edit_level, this, &HuxQt::edit_level);
@@ -514,6 +562,11 @@ namespace HuxApp
     void HuxQt::preview_config_closed()
     {
         m_internal->m_preview_config = nullptr;
+    }
+
+    void HuxQt::set_app_theme()
+    {
+        m_internal->set_app_theme();
     }
 
     void HuxQt::edit_level(int level_id)

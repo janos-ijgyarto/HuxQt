@@ -34,6 +34,7 @@ namespace HuxApp
         void import_scenario_scripts();
         void open_preview_config();
         void preview_config_closed();
+        void set_app_theme();
 
         // Scenario browser
         void edit_level(int level_id);
