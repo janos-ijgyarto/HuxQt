@@ -66,6 +66,9 @@
     <QtUic Include="src\source\UI\ScenarioBrowserView.ui">
       <Filter>Form Files</Filter>
     </QtUic>
+    <QtUic Include="src\forms\TeleportEditWidget.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\Scenario\Level.h">
@@ -130,6 +133,9 @@
     <QtMoc Include="src\include\Scenario\ScenarioBrowserModel.h">
       <Filter>Header Files\Scenario</Filter>
     </QtMoc>
+    <QtMoc Include="src\include\UI\TeleportEditWidget.h">
+      <Filter>Header Files\UI</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\source\UI\DisplaySystem.cpp">
@@ -185,6 +191,9 @@
     </ClCompile>
     <ClCompile Include="src\source\Scenario\ScenarioBrowserModel.cpp">
       <Filter>Source Files\Scenario</Filter>
+    </ClCompile>
+    <ClCompile Include="src\source\UI\TeleportEditWidget.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

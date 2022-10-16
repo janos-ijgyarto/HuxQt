@@ -116,6 +116,7 @@
     <QtUic Include="src\forms\HuxQt.ui" />
     <QtUic Include="src\forms\PreviewConfigWindow.ui" />
     <QtUic Include="src\forms\ScreenEditWidget.ui" />
+    <QtUic Include="src\forms\TeleportEditWidget.ui" />
     <QtUic Include="src\forms\TerminalEditorWindow.ui" />
     <QtUic Include="src\source\UI\ScenarioBrowserView.ui" />
   </ItemGroup>
@@ -138,6 +139,7 @@
     <QtMoc Include="src\include\UI\TerminalEditorWindow.h" />
     <QtMoc Include="src\include\Utils\ScenarioBrowserWidget.h" />
     <QtMoc Include="src\include\UI\ScenarioBrowserView.h" />
+    <QtMoc Include="src\include\UI\TeleportEditWidget.h" />
     <ClInclude Include="src\include\Utils\Utilities.h" />
     <QtMoc Include="src\include\UI\HuxQt.h" />
   </ItemGroup>
@@ -166,6 +168,7 @@
     <ClCompile Include="src\source\UI\PreviewConfigWindow.cpp" />
     <ClCompile Include="src\source\UI\ScenarioBrowserView.cpp" />
     <ClCompile Include="src\source\UI\ScreenEditWidget.cpp" />
+    <ClCompile Include="src\source\UI\TeleportEditWidget.cpp" />
     <ClCompile Include="src\source\UI\TerminalEditorWindow.cpp" />
     <ClCompile Include="src\source\Utils\ScenarioBrowserWidget.cpp" />
   </ItemGroup>

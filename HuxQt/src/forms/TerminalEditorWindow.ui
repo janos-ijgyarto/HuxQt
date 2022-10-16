@@ -29,44 +29,21 @@
         </widget>
        </item>
        <item>
-        <layout class="QGridLayout" name="terminal_info_grid" rowstretch="0,0,0" columnstretch="0,1,1">
-         <item row="1" column="0">
-          <widget class="QLabel" name="unfinished_teleport_label">
-           <property name="text">
-            <string>Unfinished Teleport:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QComboBox" name="finished_teleport_type"/>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="unfinished_teleport_edit"/>
-         </item>
-         <item row="1" column="2">
-          <widget class="QComboBox" name="unfinished_teleport_type"/>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="finished_teleport_edit"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="finished_teleport_label">
-           <property name="text">
-            <string>Finished Teleport:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
+        <layout class="QHBoxLayout" name="name_hbox">
+         <item>
           <widget class="QLabel" name="name_label">
            <property name="text">
             <string>Name:</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1" colspan="2">
+         <item>
           <widget class="QLineEdit" name="name_edit"/>
          </item>
         </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="teleport_edit_vbox"/>
        </item>
        <item>
         <widget class="Line" name="line">

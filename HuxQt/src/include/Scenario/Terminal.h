@@ -1,10 +1,19 @@
 #pragma once
+#include "Utils/Utilities.h"
 
 namespace HuxApp
 {
 	class Terminal
 	{
 	public:
+		enum class BranchType
+		{
+			UNFINISHED,
+			FINISHED,
+			FAILED,
+			TYPE_COUNT
+		};
+
 		enum class TeleportType
 		{
 			NONE,
@@ -52,28 +61,34 @@ namespace HuxApp
 			void reset();
 		};
 
+		using ScreenVector = std::vector<Screen>;
+
+		struct Branch
+		{
+			ScreenVector m_screens;
+			Teleport m_teleport;
+
+			bool is_valid() const { return (!m_screens.empty()) || (m_teleport.m_type != TeleportType::NONE); }
+		};
+
+		using BranchArray = std::array<Branch, Utils::to_integral(BranchType::TYPE_COUNT)>;
+
 		const QString& get_name() const { return m_name; }
 		void set_name(const QString& name) { m_name = name; }
 
-		Screen& get_screen(int index, bool unfinished) { return (unfinished ? m_unfinished_screens[index] : m_finished_screens[index]); }
-		std::vector<Screen>& get_screens(bool unfinished) { return (unfinished ? m_unfinished_screens : m_finished_screens); }
-		Teleport& get_teleport_info(bool unfinished) { return (unfinished ? m_unfinished_teleport : m_finished_teleport); }
+		const BranchArray& get_branches() const { return m_branches; }
 
-		const Screen& get_screen(int index, bool unfinished) const { return (unfinished ? m_unfinished_screens[index] : m_finished_screens[index]); }
-		const std::vector<Screen>& get_screens(bool unfinished) const { return (unfinished ? m_unfinished_screens : m_finished_screens); }
-		const Teleport& get_teleport_info(bool unfinished) const { return (unfinished ? m_unfinished_teleport : m_finished_teleport); }
+		const Branch& get_branch(BranchType branch) const { return m_branches[Utils::to_integral(branch)]; }
+		Branch& get_branch(BranchType branch) { return const_cast<Branch&>(const_cast<const Terminal*>(this)->get_branch(branch)); }
 
 		const QString& get_comments() const { return m_comments; }
 
+		static const char* get_branch_type_name(BranchType type);
 		static QString get_screen_string(const Screen& screen_data);
 	private:
 		QString m_name;
 
-		std::vector<Screen> m_unfinished_screens;
-		Teleport m_unfinished_teleport;
-
-		std::vector<Screen> m_finished_screens;
-		Teleport m_finished_teleport;
+		BranchArray m_branches;
 
 		QString m_comments;
 

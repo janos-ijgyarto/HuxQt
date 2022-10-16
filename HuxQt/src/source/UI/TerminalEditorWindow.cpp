@@ -7,6 +7,7 @@
 
 #include <UI/DisplaySystem.h>
 #include <UI/DisplayData.h>
+#include <UI/TeleportEditWidget.h>
 #include <UI/ScreenEditWidget.h>
 
 #include <Utils/Utilities.h>
@@ -18,13 +19,6 @@ namespace HuxApp
         constexpr int SCREEN_EDIT_TIMEOUT_MS = 1000; // Wait this number of ms after the last user edit before updating the screen preview
         constexpr int SCREEN_EDIT_PROGRESS_STEP_COUNT = 100; // Have this many steps in the progress bar shown to the user
         constexpr int SCREEN_EDIT_TIMER_INTERVAL = SCREEN_EDIT_TIMEOUT_MS / SCREEN_EDIT_PROGRESS_STEP_COUNT;
-
-        constexpr const char* TELEPORT_TYPE_LABELS[Utils::to_integral(Terminal::TeleportType::TYPE_COUNT)] =
-        {
-            "NONE",
-            "INTERLEVEL",
-            "INTRALEVEL"
-        };
 
         enum class ScreenBrowserState
         {
@@ -41,62 +35,56 @@ namespace HuxApp
 
         struct ScreenGroup
         {
+            TeleportEditWidget* m_teleport_widget = nullptr;
             std::vector<Screen> m_screens;
             bool m_modified = false;
         };
 
         struct TerminalScreenData
         {
-            ScreenGroup m_unfinished_screens;
-            ScreenGroup m_finished_screens;
+            std::array<ScreenGroup, Utils::to_integral(Terminal::BranchType::TYPE_COUNT)> m_screen_groups;
 
             int m_screen_id_counter = 0;
 
+            ScreenGroup& get_screen_group(Terminal::BranchType branch) { return m_screen_groups[Utils::to_integral(branch)]; }
+
             void init(const Terminal& terminal_data)
             {
+                auto screen_group_it = m_screen_groups.begin();
+                for (const Terminal::Branch& current_branch : terminal_data.get_branches())
                 {
-                    const std::vector<Terminal::Screen>& unfinished_screens = terminal_data.get_screens(true);
-                    for (const Terminal::Screen& current_screen_data : unfinished_screens)
+                    ScreenGroup& current_screen_group = *screen_group_it;
+                    for (const Terminal::Screen& current_screen_data : current_branch.m_screens)
                     {
-                        Screen& current_screen = m_unfinished_screens.m_screens.emplace_back();
+                        Screen& current_screen = current_screen_group.m_screens.emplace_back();
                         current_screen.m_data = current_screen_data;
                         current_screen.m_id = m_screen_id_counter++;
                     }
-                }
-                {
-                    const std::vector<Terminal::Screen>& finished_screens = terminal_data.get_screens(false);
-                    for (const Terminal::Screen& current_screen_data : finished_screens)
-                    {
-                        Screen& current_screen = m_finished_screens.m_screens.emplace_back();
-                        current_screen.m_data = current_screen_data;
-                        current_screen.m_id = m_screen_id_counter++;
-                    }
+
+                    ++screen_group_it;
                 }
             }
 
             void export_data(Terminal& terminal_data)
             {
+                for (int current_branch_index = 0; current_branch_index < Utils::to_integral(Terminal::BranchType::TYPE_COUNT); ++current_branch_index)
                 {
-                    std::vector<Terminal::Screen>& unfinished_screens = terminal_data.get_screens(true);
-                    unfinished_screens.clear();
-                    for (const Screen& current_screen_data : m_unfinished_screens.m_screens)
+                    const ScreenGroup& current_screen_group = m_screen_groups[current_branch_index];
+
+                    const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+                    Terminal::Branch& current_branch = terminal_data.get_branch(current_branch_type);
+
+                    current_branch.m_screens.clear();
+                    for (const Screen& current_screen_data : current_screen_group.m_screens)
                     {
-                        unfinished_screens.push_back(current_screen_data.m_data);
-                    }
-                }
-                {
-                    std::vector<Terminal::Screen>& finished_screens = terminal_data.get_screens(false);
-                    finished_screens.clear();
-                    for (const Screen& current_screen_data : m_finished_screens.m_screens)
-                    {
-                        finished_screens.push_back(current_screen_data.m_data);
+                        current_branch.m_screens.push_back(current_screen_data.m_data);
                     }
                 }
             }
 
-            void reorder_screens(const std::vector<int>& new_id_list, const std::unordered_set<int>& moved_ids, bool unfinished)
+            void reorder_screens(const std::vector<int>& new_id_list, const std::unordered_set<int>& moved_ids, Terminal::BranchType branch)
             {
-                ScreenGroup& screen_group = unfinished ? m_unfinished_screens : m_finished_screens;
+                ScreenGroup& screen_group = get_screen_group(branch);
                 assert(new_id_list.size() == screen_group.m_screens.size());
 
                 const std::vector<Screen> screen_group_copy = screen_group.m_screens;
@@ -122,9 +110,9 @@ namespace HuxApp
                 screen_group.m_modified = true;
             }
 
-            void add_screen(bool unfinished, int index)
+            void add_screen(Terminal::BranchType branch, int index)
             {
-                ScreenGroup& screen_group = unfinished ? m_unfinished_screens : m_finished_screens;
+                ScreenGroup& screen_group = get_screen_group(branch);
                 const size_t screen_index = std::clamp(size_t(index), size_t(0), screen_group.m_screens.size());
 
                 // Add the screen data object
@@ -135,9 +123,9 @@ namespace HuxApp
                 screen_group.m_modified = true;
             }
 
-            void add_screens(const std::vector<Terminal::Screen>& new_screens, bool unfinished, int index)
+            void add_screens(const std::vector<Terminal::Screen>& new_screens, Terminal::BranchType branch, int index)
             {
-                ScreenGroup& screen_group = unfinished ? m_unfinished_screens : m_finished_screens;
+                ScreenGroup& screen_group = get_screen_group(branch);
                 const size_t screen_index = std::clamp(size_t(index), size_t(0), screen_group.m_screens.size());
                 auto new_screen_it = screen_group.m_screens.begin() + screen_index;
 
@@ -155,9 +143,9 @@ namespace HuxApp
                 screen_group.m_modified = true;
             }
 
-            void remove_screens(const std::vector<int>& screen_indices, bool unfinished)
+            void remove_screens(const std::vector<int>& screen_indices, Terminal::BranchType branch)
             {
-                ScreenGroup& screen_group = unfinished ? m_unfinished_screens : m_finished_screens;
+                ScreenGroup& screen_group = get_screen_group(branch);
                 const std::vector<Screen> prev_screens = screen_group.m_screens;
                 screen_group.m_screens.clear();
 
@@ -174,35 +162,29 @@ namespace HuxApp
                 screen_group.m_modified = true;
             }
 
-            Screen& find_screen_data(int screen_id)
+            Screen* find_screen_data(int screen_id)
             {
-                // First try the unfinished screens
-                auto screen_it = std::find_if(m_unfinished_screens.m_screens.begin(), m_unfinished_screens.m_screens.end(),
-                    [screen_id](const Screen& current_screen)
-                    {
-                        return (current_screen.m_id == screen_id);
-                    }
-                );
-
-                if (screen_it == m_unfinished_screens.m_screens.end())
+                for (ScreenGroup& current_screen_group : m_screen_groups)
                 {
-                    // Try the finished screens
-                    screen_it = std::find_if(m_finished_screens.m_screens.begin(), m_finished_screens.m_screens.end(),
+                    auto screen_it = std::find_if(current_screen_group.m_screens.begin(), current_screen_group.m_screens.end(),
                         [screen_id](const Screen& current_screen)
                         {
                             return (current_screen.m_id == screen_id);
                         }
                     );
 
-                    // We should have found a screen by now
-                    assert(screen_it != m_finished_screens.m_screens.end());
+                    if (screen_it != current_screen_group.m_screens.end())
+                    {
+                        return &(*screen_it);
+                    }
                 }
-                return *screen_it;
+
+                return nullptr;
             }
 
-            const Screen& find_screen_data(int screen_id, bool unfinished)
+            const Screen* find_screen_data(int screen_id, Terminal::BranchType branch)
             {
-                const ScreenGroup& screen_group = unfinished ? m_unfinished_screens : m_finished_screens;
+                const ScreenGroup& screen_group = get_screen_group(branch);
                 auto screen_it = std::find_if(screen_group.m_screens.begin(), screen_group.m_screens.end(), 
                     [screen_id](const Screen& current_screen)
                     {
@@ -210,8 +192,12 @@ namespace HuxApp
                     }
                 );
 
-                assert(screen_it != screen_group.m_screens.end());
-                return *screen_it;
+                if (screen_it != screen_group.m_screens.end())
+                {
+                    return &(*screen_it);
+                }
+
+                return nullptr;
             }
         };
 
@@ -220,11 +206,9 @@ namespace HuxApp
             return QStringLiteral("%1 (%2)").arg(Terminal::get_screen_string(screen_data)).arg(screen_id);
         }
 
-        QString get_screen_full_label(const Terminal::Screen& screen_data, int screen_id, bool unfinished)
+        QString get_screen_full_label(const Terminal::Screen& screen_data, int screen_id, Terminal::BranchType branch)
         {
-            const QString screen_label = get_screen_label(screen_data, screen_id);
-            const QString prefix = unfinished ? QStringLiteral("UNFINISHED - ") : QStringLiteral("FINISHED - ");
-            return prefix + screen_label;
+            return QStringLiteral("%1 - %2").arg(Terminal::get_branch_type_name(branch)).arg(get_screen_label(screen_data, screen_id));
         }
     }
 
@@ -240,11 +224,11 @@ namespace HuxApp
 
         // Screen browser
         ScreenBrowserState m_screen_browser_state = ScreenBrowserState::SCREEN_GROUPS;
-        bool m_in_unfinished_group = true;
+        Terminal::BranchType m_current_branch = Terminal::BranchType::UNFINISHED;
         TerminalScreenData m_screen_data;
 
         int m_selected_screen_id = -1;
-        bool m_selected_group_unfinished = true;
+        Terminal::BranchType m_selected_screen_branch = Terminal::BranchType::UNFINISHED;
 
         // Flags
         bool m_modified = false;
@@ -263,16 +247,9 @@ namespace HuxApp
             }
         }
 
-        void init_screen_group_item(QListWidgetItem* screen_group_item, const ScreenGroup& group, bool unfinished)
+        void init_screen_group_item(QListWidgetItem* screen_group_item, const ScreenGroup& group, Terminal::BranchType branch)
         {
-            if (unfinished)
-            {
-                screen_group_item->setText(QStringLiteral("UNFINISHED"));
-            }
-            else
-            {
-                screen_group_item->setText(QStringLiteral("FINISHED"));
-            }
+            screen_group_item->setText(Terminal::get_branch_type_name(branch));
             screen_group_item->setIcon(QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_DirIcon));
             
             if (group.m_modified)
@@ -319,15 +296,19 @@ namespace HuxApp
 
             if (m_screen_browser_state == ScreenBrowserState::SCREEN_GROUPS)
             {
-                QListWidgetItem* unfinished_group_item = new QListWidgetItem(m_ui.screen_browser_view);
-                init_screen_group_item(unfinished_group_item, m_screen_data.m_unfinished_screens, true);
+                for (int current_branch_index = 0; current_branch_index < Utils::to_integral(Terminal::BranchType::TYPE_COUNT); ++current_branch_index)
+                {
+                    const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+                    const ScreenGroup& screen_group = m_screen_data.get_screen_group(current_branch_type);
 
-                QListWidgetItem* finished_group_item = new QListWidgetItem(m_ui.screen_browser_view);
-                init_screen_group_item(finished_group_item, m_screen_data.m_finished_screens, false);
+                    QListWidgetItem* current_group_item = new QListWidgetItem(m_ui.screen_browser_view);
+
+                    init_screen_group_item(current_group_item, screen_group, current_branch_type);
+                }
             }
             else
             {
-                const ScreenGroup& screen_group = m_in_unfinished_group ? m_screen_data.m_unfinished_screens : m_screen_data.m_finished_screens;
+                const ScreenGroup& screen_group = m_screen_data.get_screen_group(m_current_branch);
                 for (const Screen& current_screen : screen_group.m_screens)
                 {
                     QListWidgetItem* screen_item = new QListWidgetItem(m_ui.screen_browser_view);
@@ -348,10 +329,10 @@ namespace HuxApp
             reset_screen_browser();
         }
 
-        void open_screen_group(bool unfinished)
+        void open_screen_group(Terminal::BranchType branch)
         {
             m_screen_browser_state = ScreenBrowserState::SCREEN_LIST;
-            m_in_unfinished_group = unfinished;
+            m_current_branch = branch;
 
             // Change selection and drag & drop mode
             m_ui.screen_browser_view->setDragDropMode(QAbstractItemView::DragDropMode::InternalMove);
@@ -396,37 +377,23 @@ namespace HuxApp
         {
             if ((m_selected_screen_id >= 0) && m_ui.screen_edit_widget->is_modified())
             {
-                Screen& screen_data = m_screen_data.find_screen_data(m_selected_screen_id);
-                screen_data.m_data = m_ui.screen_edit_widget->get_screen_data();
-                screen_data.m_modified = true;
+                if (Screen* screen_data = m_screen_data.find_screen_data(m_selected_screen_id))
+                {
+                    screen_data->m_data = m_ui.screen_edit_widget->get_screen_data();
+                    screen_data->m_modified = true;
+                }
             }
         }
 
-        void save_teleport_info(bool unfinished)
+        void save_teleport_info()
         {
-            Terminal::Teleport& teleport_info = m_terminal_data.get_teleport_info(unfinished);
-            QLineEdit* teleport_index_edit = unfinished ? m_ui.unfinished_teleport_edit : m_ui.finished_teleport_edit;
-            QComboBox* teleport_type_combo = unfinished ? m_ui.unfinished_teleport_type : m_ui.finished_teleport_type;
-
-            // First set the type
-            teleport_info.m_type = static_cast<Terminal::TeleportType>(teleport_type_combo->currentIndex());
-
-            if (teleport_info.m_type != Terminal::TeleportType::NONE)
+            for (int current_branch_index = 0; current_branch_index < Utils::to_integral(Terminal::BranchType::TYPE_COUNT); ++current_branch_index)
             {
-                // Active teleport, so the user must provide a valid input
-                const QString teleport_index_text = teleport_index_edit->text();
-                if (!teleport_index_text.isEmpty())
-                {
-                    teleport_info.m_index = teleport_index_text.toInt();
-                }
-                else
-                {
-                    teleport_info.m_index = 0;
-                }
-            }
-            else
-            {
-                teleport_info.m_index = -1;
+                const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+                Terminal::Branch& current_branch = m_terminal_data.get_branch(current_branch_type);
+    
+                const TeleportEditWidget* teleport_edit_widget = m_screen_data.m_screen_groups[current_branch_index].m_teleport_widget;
+                current_branch.m_teleport = teleport_edit_widget->get_teleport_info();
             }
         }
 
@@ -456,7 +423,7 @@ namespace HuxApp
             }
 
             // Reorder the data
-            m_screen_data.reorder_screens(new_id_list, moved_ids, m_in_unfinished_group);
+            m_screen_data.reorder_screens(new_id_list, moved_ids, m_current_branch);
 
             // Reset the view to show the new order
             reset_screen_browser();
@@ -491,8 +458,7 @@ namespace HuxApp
                 m_screen_data.export_data(m_terminal_data);
 
                 // Save the teleport info
-                save_teleport_info(true);
-                save_teleport_info(false);
+                save_teleport_info();
 
                 m_model.update_terminal_data(m_terminal_id, m_terminal_data);
 
@@ -577,10 +543,6 @@ namespace HuxApp
         connect(m_internal->m_ui.dialog_button_box, &QDialogButtonBox::rejected, this, &TerminalEditorWindow::cancel_clicked);
 
         connect(m_internal->m_ui.name_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
-        connect(m_internal->m_ui.unfinished_teleport_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
-        connect(m_internal->m_ui.finished_teleport_edit, &QLineEdit::textEdited, this, &TerminalEditorWindow::terminal_data_modified);
-        connect(m_internal->m_ui.unfinished_teleport_type, QOverload<int>::of(&QComboBox::activated), this, &TerminalEditorWindow::terminal_data_modified);
-        connect(m_internal->m_ui.finished_teleport_type, QOverload<int>::of(&QComboBox::activated), this, &TerminalEditorWindow::terminal_data_modified);
 
         connect(&m_internal->m_edit_timer, &QTimer::timeout, this, &TerminalEditorWindow::update_edit_notification);
 
@@ -622,40 +584,22 @@ namespace HuxApp
 
     void TerminalEditorWindow::init_terminal_info()
     {
-        // Set validators for the inputs
-        m_internal->m_ui.unfinished_teleport_edit->setValidator(new QIntValidator(this));
-        m_internal->m_ui.finished_teleport_edit->setValidator(new QIntValidator(this));
-
-        for (int teleport_type_index = 0; teleport_type_index < Utils::to_integral(Terminal::TeleportType::TYPE_COUNT); ++teleport_type_index)
+        // Create the teleport editors
+        for (int current_branch_index = 0; current_branch_index < Utils::to_integral(Terminal::BranchType::TYPE_COUNT); ++current_branch_index)
         {
-            m_internal->m_ui.unfinished_teleport_type->addItem(TELEPORT_TYPE_LABELS[teleport_type_index]);
-            m_internal->m_ui.finished_teleport_type->addItem(TELEPORT_TYPE_LABELS[teleport_type_index]);
+            const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+            ScreenGroup& current_screen_group = m_internal->m_screen_data.m_screen_groups[current_branch_index];
+
+            current_screen_group.m_teleport_widget = new TeleportEditWidget(QString(Terminal::get_branch_type_name(current_branch_type)), m_internal->m_terminal_data.get_branch(current_branch_type).m_teleport);
+
+            connect(current_screen_group.m_teleport_widget, &TeleportEditWidget::teleport_info_modified, this, &TerminalEditorWindow::terminal_data_modified);
+
+            m_internal->m_ui.teleport_edit_vbox->addWidget(current_screen_group.m_teleport_widget);
         }
 
         m_internal->m_ui.dialog_button_box->button(QDialogButtonBox::StandardButton::Ok)->setEnabled(false);
 
         m_internal->m_ui.name_edit->setText(m_internal->m_terminal_data.get_name());
-
-        // Teleport info
-        {
-            const Terminal::Teleport& unfinished_teleport = m_internal->m_terminal_data.get_teleport_info(true);
-            m_internal->m_ui.unfinished_teleport_type->setCurrentIndex(Utils::to_integral(unfinished_teleport.m_type));
-            if (unfinished_teleport.m_type != Terminal::TeleportType::NONE)
-            {
-                m_internal->m_ui.unfinished_teleport_edit->setText(QString::number(unfinished_teleport.m_index));
-            }
-        }
-
-        {
-            const Terminal::Teleport& finished_teleport = m_internal->m_terminal_data.get_teleport_info(false);
-            m_internal->m_ui.finished_teleport_type->setCurrentIndex(Utils::to_integral(finished_teleport.m_type));
-
-            m_internal->m_ui.finished_teleport_type->setCurrentIndex(Utils::to_integral(finished_teleport.m_type));
-            if (finished_teleport.m_type != Terminal::TeleportType::NONE)
-            {
-                m_internal->m_ui.finished_teleport_edit->setText(QString::number(finished_teleport.m_index));
-            }
-        }
     }
 
     void TerminalEditorWindow::init_screen_editor()
@@ -698,16 +642,16 @@ namespace HuxApp
                 // Update the label and the item text
                 const Terminal::Screen& edited_screen_data = m_internal->m_ui.screen_edit_widget->get_screen_data();
                 screen_item->setText(get_screen_label(edited_screen_data, m_internal->m_selected_screen_id));
-                m_internal->m_ui.current_screen_label->setText(get_screen_full_label(edited_screen_data, m_internal->m_selected_screen_id, m_internal->m_selected_group_unfinished));
+                m_internal->m_ui.current_screen_label->setText(get_screen_full_label(edited_screen_data, m_internal->m_selected_screen_id, m_internal->m_selected_screen_branch));
             }
 
-            Screen& screen_data = m_internal->m_screen_data.find_screen_data(m_internal->m_selected_screen_id);
-            if (!screen_data.m_modified)
+            Screen* screen_data = m_internal->m_screen_data.find_screen_data(m_internal->m_selected_screen_id);
+            if (screen_data && !screen_data->m_modified)
             {
                 QFont font = screen_item->font();
                 font.setBold(true);
                 screen_item->setFont(font);
-                screen_data.m_modified = true;
+                screen_data->m_modified = true;
             }
 
             // Start/restart the timer for updating the preview
@@ -758,7 +702,7 @@ namespace HuxApp
         if (m_internal->m_modified)
         {
             // Gather and validate terminal info
-            if (!gather_teleport_info(true) || !gather_teleport_info(false))
+            if (!gather_teleport_info())
             {
                 QMessageBox::warning(this, "Terminal Error", "Active teleport must have valid destination (field must not be empty)!");
                 return false;
@@ -767,30 +711,26 @@ namespace HuxApp
         return true;
     }
 
-    bool TerminalEditorWindow::gather_teleport_info(bool unfinished)
+    bool TerminalEditorWindow::gather_teleport_info()
     {
-        Terminal::Teleport& teleport_info = m_internal->m_terminal_data.get_teleport_info(unfinished);
-        QLineEdit* teleport_index_edit = unfinished ? m_internal->m_ui.unfinished_teleport_edit : m_internal->m_ui.finished_teleport_edit;
-        QComboBox* teleport_type_combo = unfinished ? m_internal->m_ui.unfinished_teleport_type : m_internal->m_ui.finished_teleport_type;
-
-        // First set the type
-        teleport_info.m_type = static_cast<Terminal::TeleportType>(teleport_type_combo->currentIndex());
-
-        if (teleport_info.m_type != Terminal::TeleportType::NONE)
+        bool valid = true;
+        int current_branch_index = 0;
+        for (const ScreenGroup& current_screen_group : m_internal->m_screen_data.m_screen_groups)
         {
-            // Active teleport, so the user must provide a valid input
-            const QString teleport_index_text = teleport_index_edit->text();
-            if (teleport_index_text.isEmpty())
+            const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+
+            Terminal::Branch& current_branch = m_internal->m_terminal_data.get_branch(current_branch_type);
+            current_branch.m_teleport = current_screen_group.m_teleport_widget->get_teleport_info();
+
+            if (!current_screen_group.m_teleport_widget->is_valid())
             {
-                return false;
+                valid = false;
             }
-            teleport_info.m_index = teleport_index_text.toInt();
+
+            ++current_branch_index;
         }
-        else
-        {
-            teleport_info.m_index = -1;
-        }
-        return true;
+
+        return valid;
     }
 
     void TerminalEditorWindow::ok_clicked()
@@ -840,14 +780,14 @@ namespace HuxApp
         // Store copies of the selected screens in the clipboard
         Terminal clipboard_terminal;
 
-        std::vector<Terminal::Screen>& clipboard_screen_group = clipboard_terminal.get_screens(true); // Always use the UNFINISHED group, we're just using the terminal object as a container
-        const ScreenGroup& edited_screen_group = m_internal->m_in_unfinished_group ? m_internal->m_screen_data.m_unfinished_screens : m_internal->m_screen_data.m_finished_screens;
+        Terminal::Branch& clipboard_screen_group = clipboard_terminal.get_branch(Terminal::BranchType::UNFINISHED); // Always use the UNFINISHED group, we're just using the terminal object as a container
+        const ScreenGroup& edited_screen_group = m_internal->m_screen_data.get_screen_group(m_internal->m_current_branch);
 
         QList<QListWidgetItem*> selected_screens = m_internal->get_selected_screens();
         for (QListWidgetItem* current_screen_item : selected_screens)
         {
             const int screen_index = m_internal->get_screen_item_index(current_screen_item);
-            clipboard_screen_group.push_back(edited_screen_group.m_screens[screen_index].m_data);
+            clipboard_screen_group.m_screens.push_back(edited_screen_group.m_screens[screen_index].m_data);
         }
 
         m_core.get_scenario_manager().set_screen_clipboard(clipboard_terminal);
@@ -861,14 +801,14 @@ namespace HuxApp
         const int paste_index = (selected_index >= 0) ? selected_index : m_internal->m_ui.screen_browser_view->count();
 
         // Always read screens from unfinished group (we're only using the terminal object as a container)
-        const std::vector<Terminal::Screen>& clipboard_screen_group = m_core.get_scenario_manager().get_screen_clipboard()->get_screens(true);
-        m_internal->m_screen_data.add_screens(clipboard_screen_group, m_internal->m_in_unfinished_group, paste_index);
-
+        const Terminal::Branch& clipboard_screen_group = m_core.get_scenario_manager().get_screen_clipboard()->get_branch(Terminal::BranchType::UNFINISHED);
+        m_internal->m_screen_data.add_screens(clipboard_screen_group.m_screens, m_internal->m_current_branch, paste_index);
+ 
         // Reset view to include the new items
         m_internal->reset_screen_browser();
 
         // Select the newly inserted screens
-        for (int new_screen_index = paste_index; new_screen_index < (paste_index + clipboard_screen_group.size()); ++new_screen_index)
+        for (int new_screen_index = paste_index; new_screen_index < (paste_index + clipboard_screen_group.m_screens.size()); ++new_screen_index)
         {
             m_internal->m_ui.screen_browser_view->item(new_screen_index)->setSelected(true);
         }
@@ -890,8 +830,8 @@ namespace HuxApp
     {
         if (m_internal->m_screen_browser_state == ScreenBrowserState::SCREEN_GROUPS)
         {
-            const bool unfinished_group = (m_internal->m_ui.screen_browser_view->row(item) == 0);
-            m_internal->open_screen_group(unfinished_group);
+            const Terminal::BranchType selected_branch = Utils::to_enum<Terminal::BranchType>(m_internal->m_ui.screen_browser_view->row(item));
+            m_internal->open_screen_group(selected_branch);
         }
     }
 
@@ -917,20 +857,22 @@ namespace HuxApp
                 m_internal->save_screen_changes();
 
                 m_internal->m_selected_screen_id = screen_id;
-                m_internal->m_selected_group_unfinished = m_internal->m_in_unfinished_group;
+                m_internal->m_selected_screen_branch = m_internal->m_current_branch;
 
                 // Get the new screen data
-                const Screen& screen_data = m_internal->m_screen_data.find_screen_data(screen_id, m_internal->m_in_unfinished_group);
+                const Screen* screen_data = m_internal->m_screen_data.find_screen_data(screen_id, m_internal->m_current_branch);
+                if (screen_data)
+                {
+                    // Update the label
+                    m_internal->m_ui.current_screen_label->setText(get_screen_full_label(screen_data->m_data, screen_id, m_internal->m_current_branch));
 
-                // Update the label
-                m_internal->m_ui.current_screen_label->setText(get_screen_full_label(screen_data.m_data, screen_id, m_internal->m_in_unfinished_group));
+                    // Reset the editor
+                    m_internal->m_ui.screen_edit_widget->reset_editor(screen_data->m_data);
+                    m_internal->m_ui.screen_edit_widget->setEnabled(true);
 
-                // Reset the editor
-                m_internal->m_ui.screen_edit_widget->reset_editor(screen_data.m_data);
-                m_internal->m_ui.screen_edit_widget->setEnabled(true);
-
-                // Update the preview
-                update_preview();
+                    // Update the preview
+                    update_preview();
+                }
             }
         }
     }
@@ -951,7 +893,7 @@ namespace HuxApp
         // Add a new screen
         QList<QListWidgetItem*> selected_screens = m_internal->get_selected_screens();
         const int selected_index = selected_screens.isEmpty() ? m_internal->m_ui.screen_browser_view->count() : m_internal->get_screen_item_index(selected_screens.front());
-        m_internal->m_screen_data.add_screen(m_internal->m_in_unfinished_group, selected_index);
+        m_internal->m_screen_data.add_screen(m_internal->m_current_branch, selected_index);
 
         // Reset view to include the new item
         m_internal->reset_screen_browser();
@@ -990,7 +932,7 @@ namespace HuxApp
             }
 
             // Remove the screens
-            m_internal->m_screen_data.remove_screens(selected_screen_indices, m_internal->m_in_unfinished_group);
+            m_internal->m_screen_data.remove_screens(selected_screen_indices, m_internal->m_current_branch);
 
             // Reset view to show changes
             m_internal->reset_screen_browser();

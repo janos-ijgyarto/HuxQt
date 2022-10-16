@@ -24,6 +24,7 @@ namespace HuxApp
 			END_TERMINAL,
 			UNFINISHED,
 			FINISHED,
+			FAILED,
 			END,
 			LOGON,
 			INFORMATION,
@@ -43,6 +44,7 @@ namespace HuxApp
 			"#ENDTERMINAL",
 			"#UNFINISHED",
 			"#FINISHED",
+			"#FAILED",
 			"#END",
 			"#LOGON",
 			"#INFORMATION",
@@ -197,6 +199,59 @@ namespace HuxApp
 			else
 			{
 				return Terminal::ScreenAlignment::LEFT;
+			}
+		}
+
+		Terminal::BranchType get_branch_type(ScriptKeywords keyword)
+		{
+			switch (keyword)
+			{
+			case ScriptKeywords::UNFINISHED:
+				return Terminal::BranchType::UNFINISHED;
+			case ScriptKeywords::FINISHED:
+				return Terminal::BranchType::FINISHED;
+			case ScriptKeywords::FAILED:
+				return Terminal::BranchType::FAILED;
+			}
+
+			// Default to "unfinished" (we should never be here though)
+			return Terminal::BranchType::UNFINISHED;
+		}
+
+		ScriptKeywords get_branch_type_keyword(Terminal::BranchType branch_type)
+		{
+			switch (branch_type)
+			{
+			case Terminal::BranchType::UNFINISHED:
+				return ScriptKeywords::UNFINISHED;
+			case Terminal::BranchType::FINISHED:
+				return ScriptKeywords::FINISHED;
+			case Terminal::BranchType::FAILED:
+				return ScriptKeywords::FAILED;
+			}
+
+			// Default to "unfinished" (we should never be here though)
+			return ScriptKeywords::UNFINISHED;
+		}
+
+		Terminal::BranchType get_branch_type(const QString& branch_type_text)
+		{
+			if (branch_type_text == "UNFINISHED")
+			{
+				return Terminal::BranchType::UNFINISHED;
+			}
+			else if (branch_type_text == "FINISHED")
+			{
+				return Terminal::BranchType::FINISHED;
+			}
+			else if(branch_type_text == "FAILED")
+			{
+				return Terminal::BranchType::FAILED;
+			}
+			else
+			{
+				// Default to "unfinished" (we should never be here though)
+				return Terminal::BranchType::UNFINISHED;
 			}
 		}
 
@@ -642,9 +697,10 @@ namespace HuxApp
 					{
 					case ScriptKeywords::UNFINISHED:
 					case ScriptKeywords::FINISHED:
+					case ScriptKeywords::FAILED:
 					{
 						m_state = ParserState::SCREENS;
-						parse_terminal_screens(new_terminal, m_current_line_type == ScriptKeywords::UNFINISHED);
+						parse_terminal_screens(new_terminal, get_branch_type(m_current_line_type));
 
 						if (m_state == ParserState::INVALID)
 						{
@@ -679,11 +735,10 @@ namespace HuxApp
 			m_state = ParserState::INVALID;
 		}
 
-		void parse_terminal_screens(Terminal& terminal, bool unfinished)
+		void parse_terminal_screens(Terminal& terminal, Terminal::BranchType branch)
 		{
 			// Parse pages
-			std::vector<Terminal::Screen>& screen_vec = unfinished ? terminal.m_unfinished_screens : terminal.m_finished_screens;
-			Terminal::Teleport& teleport_info = unfinished ? terminal.m_unfinished_teleport : terminal.m_finished_teleport;
+			Terminal::Branch& selected_branch = terminal.get_branch(branch);
 
 			Terminal::Screen current_screen;
 
@@ -697,7 +752,7 @@ namespace HuxApp
 						// Was parsing info for a valid screen, and we hit a new keyword, so we can now store this screen
 						current_screen.m_script.chop(1); // Parsing will add a redundant endline at the very end, remove it
 						current_screen.m_display_text = convert_ao_to_html(current_screen.m_script, Utils::to_integral(current_screen.m_type));
-						screen_vec.push_back(current_screen);
+						selected_branch.m_screens.push_back(current_screen);
 						current_screen.reset();
 						current_screen.m_comments = m_comment_buffer; // All comments up to this point will be interpreted as for this screen
 						m_comment_buffer.clear();
@@ -754,8 +809,8 @@ namespace HuxApp
 					{
 						// Get the teleport index from the third string
 						QStringList line_split = m_current_line.split(' ');
-						teleport_info.m_index = line_split.at(2).toInt();
-						teleport_info.m_type = (m_current_line_type == ScriptKeywords::INTERLEVEL_TELEPORT) ? Terminal::TeleportType::INTERLEVEL : Terminal::TeleportType::INTRALEVEL;
+						selected_branch.m_teleport.m_index = line_split.at(2).toInt();
+						selected_branch.m_teleport.m_type = (m_current_line_type == ScriptKeywords::INTERLEVEL_TELEPORT) ? Terminal::TeleportType::INTERLEVEL : Terminal::TeleportType::INTRALEVEL;
 					}
 					break;
 					case ScriptKeywords::TAG:
@@ -835,41 +890,45 @@ namespace HuxApp
 			screen_json["SCRIPT"] = screen.m_script;
 		}
 
+		static void serialize_terminal_branch_json(const Terminal::Branch& terminal_branch, Terminal::BranchType branch_type, QJsonObject& terminal_branch_json)
+		{
+			QJsonArray screens_array;
+			for (const Terminal::Screen& current_screen : terminal_branch.m_screens)
+			{
+				QJsonObject current_screen_json;
+				serialize_screen_json(current_screen, current_screen_json);
+				screens_array.append(current_screen_json);
+			}
+
+			terminal_branch_json["SCREENS"] = screens_array;
+
+			QJsonObject teleport_json;
+			serialize_teleport_info(terminal_branch.m_teleport, teleport_json);
+			terminal_branch_json["TELEPORT"] = teleport_json;
+		}
+
 		static void serialize_terminal_json(const Terminal& terminal, QJsonObject& terminal_json)
 		{
+			// Serialize name and all the valid branches
 			terminal_json["NAME"] = terminal.m_name;
 
-			// Unfinished data
-			{
-				QJsonArray unfinished_screens_array;
-				for (const Terminal::Screen& current_screen : terminal.m_unfinished_screens)
-				{
-					QJsonObject current_screen_json;
-					serialize_screen_json(current_screen, current_screen_json);
-					unfinished_screens_array.append(current_screen_json);
-				}
-				terminal_json["UNFINISHED_SCREENS"] = unfinished_screens_array;
+			QJsonObject branches_json;
 
-				QJsonObject unfinished_teleport_json;
-				serialize_teleport_info(terminal.m_unfinished_teleport, unfinished_teleport_json);
-				terminal_json["UNFINISHED_TELEPORT"] = unfinished_teleport_json;
+			int current_branch_index = 0;
+			for (const Terminal::Branch& current_branch : terminal.m_branches)
+			{
+				const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+				if (current_branch.is_valid())
+				{
+					QJsonObject current_branch_json;
+					serialize_terminal_branch_json(current_branch, current_branch_type, current_branch_json);
+
+					branches_json[Terminal::get_branch_type_name(current_branch_type)] = current_branch_json;
+				}
+				++current_branch_index;
 			}
 
-			// Finished data
-			{
-				QJsonArray finished_screens_array;
-				for (const Terminal::Screen& current_screen : terminal.m_finished_screens)
-				{
-					QJsonObject current_screen_json;
-					serialize_screen_json(current_screen, current_screen_json);
-					finished_screens_array.append(current_screen_json);
-				}
-				terminal_json["FINISHED_SCREENS"] = finished_screens_array;
-
-				QJsonObject finished_teleport_json;
-				serialize_teleport_info(terminal.m_finished_teleport, finished_teleport_json);
-				terminal_json["FINISHED_TELEPORT"] = finished_teleport_json;
-			}
+			terminal_json["BRANCHES"] = branches_json;
 		}
 
 		static void serialize_level_json(const Level& level, QJsonObject& level_json)
@@ -906,36 +965,32 @@ namespace HuxApp
 			screen.m_display_text = convert_ao_to_html(screen.m_script, Utils::to_integral(screen.m_type));
 		}
 
+		static void deserialize_terminal_branch_json(const QJsonObject& terminal_branch_json, Terminal::Branch& terminal_branch)
+		{
+			const QJsonArray screens_array = terminal_branch_json["SCREENS"].toArray();
+			for (const QJsonValue& current_screen_json_value : screens_array)
+			{
+				Terminal::Screen& current_screen = terminal_branch.m_screens.emplace_back();
+				const QJsonObject current_screen_json = current_screen_json_value.toObject();
+				deserialize_screen_json(current_screen_json, current_screen);
+			}
+
+			const QJsonObject teleport_json = terminal_branch_json["TELEPORT"].toObject();
+			deserialize_teleport_info(teleport_json, terminal_branch.m_teleport);
+		}
+
 		static void deserialize_terminal_json(const QJsonObject& terminal_json, Terminal& terminal)
 		{
 			terminal.m_name = terminal_json["NAME"].toString();
 
-			// Unfinished data
+			const QJsonObject terminal_branches_json = terminal_json["BRANCHES"].toObject();
+
+			for (const QString& current_key : terminal_branches_json.keys())
 			{
-				const QJsonArray unfinished_screens_array = terminal_json["UNFINISHED_SCREENS"].toArray();
-				for (const QJsonValue& current_screen_json_value : unfinished_screens_array)
-				{
-					Terminal::Screen& current_screen = terminal.m_unfinished_screens.emplace_back();
-					const QJsonObject current_screen_json = current_screen_json_value.toObject();
-					deserialize_screen_json(current_screen_json, current_screen);
-				}
+				const QJsonObject current_branch_object = terminal_branches_json[current_key].toObject();
+				Terminal::Branch& current_branch = terminal.get_branch(get_branch_type(current_key));
 
-				const QJsonObject unfinished_teleport_json = terminal_json["UNFINISHED_TELEPORT"].toObject();
-				deserialize_teleport_info(unfinished_teleport_json, terminal.m_unfinished_teleport);
-			}
-
-			// Finished data
-			{
-				const QJsonArray finished_screens_array = terminal_json["FINISHED_SCREENS"].toArray();
-				for (const QJsonValue& current_screen_json_value : finished_screens_array)
-				{
-					Terminal::Screen& current_screen = terminal.m_finished_screens.emplace_back();
-					const QJsonObject current_screen_json = current_screen_json_value.toObject();
-					deserialize_screen_json(current_screen_json, current_screen);
-				}
-
-				const QJsonObject finished_teleport_json = terminal_json["FINISHED_TELEPORT"].toObject();
-				deserialize_teleport_info(finished_teleport_json, terminal.m_finished_teleport);
+				deserialize_terminal_branch_json(current_branch_object, current_branch);
 			}
 		}
 
@@ -1139,6 +1194,10 @@ namespace HuxApp
 		for (const Terminal& current_terminal : level.m_terminals)
 		{
 			export_terminal_script(current_terminal, terminal_index, level_script_text);
+			if (terminal_index < (level.m_terminals.size() - 1))
+			{
+				level_script_text += "\n";
+			}
 			++terminal_index;
 		}
 		return level_script_text;
@@ -1296,39 +1355,29 @@ namespace HuxApp
 		const QString terminal_id_string = QString::number(terminal_index);
 		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::TERMINAL), terminal_id_string);
 
-		if (!terminal.m_unfinished_screens.empty() || (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE))
+		int current_branch_index = 0;
+		for (const Terminal::Branch& current_branch : terminal.m_branches)
 		{
-			// Add the UNFINISHED header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::UNFINISHED));
-
-			// Add screens and teleport info
-			export_terminal_screens(terminal.m_unfinished_screens, level_script_text);
-			if (terminal.m_unfinished_teleport.m_type != Terminal::TeleportType::NONE)
+			const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+			if (current_branch.is_valid())
 			{
-				export_terminal_teleport(terminal.m_unfinished_teleport, level_script_text);
+				// Add the branch type header
+				level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(get_branch_type_keyword(current_branch_type)));
+
+				// Add screens and teleport info
+				export_terminal_screens(current_branch.m_screens, level_script_text);
+				if (current_branch.m_teleport.m_type != Terminal::TeleportType::NONE)
+				{
+					export_terminal_teleport(current_branch.m_teleport, level_script_text);
+				}
+
+				// Add the end header
+				level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
 			}
-
-			// Add the end header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
-		}
-
-		if (!terminal.m_finished_screens.empty() || (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE))
-		{
-			// Add the FINISHED header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::FINISHED));
-
-			// Add screens and teleport info
-			export_terminal_screens(terminal.m_finished_screens, level_script_text);
-			if (terminal.m_finished_teleport.m_type != Terminal::TeleportType::NONE)
-			{
-				export_terminal_teleport(terminal.m_finished_teleport, level_script_text);
-			}
-
-			// Add the end header
-			level_script_text += QStringLiteral("%1\n").arg(get_script_keyword(ScriptKeywords::END));
+			++current_branch_index;
 		}
 
 		// Add the terminal end header
-		level_script_text += QStringLiteral("%1 %2\n").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
+		level_script_text += QStringLiteral("%1 %2").arg(get_script_keyword(ScriptKeywords::END_TERMINAL), terminal_id_string);
 	}
 }

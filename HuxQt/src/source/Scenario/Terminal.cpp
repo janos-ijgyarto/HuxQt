@@ -13,6 +13,21 @@ namespace HuxApp
 		m_comments.clear();
 	}
 
+	const char* Terminal::get_branch_type_name(BranchType type)
+	{
+		switch (type)
+		{
+		case Terminal::BranchType::UNFINISHED:
+			return "UNFINISHED";
+		case Terminal::BranchType::FINISHED:
+			return "FINISHED";
+		case Terminal::BranchType::FAILED:
+			return "FAILED";
+		}
+
+		return "";
+	}
+
 	QString Terminal::get_screen_string(const Screen& screen_data)
 	{
 		switch (screen_data.m_type)

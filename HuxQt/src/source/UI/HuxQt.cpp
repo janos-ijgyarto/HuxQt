@@ -25,7 +25,7 @@ namespace HuxApp
     namespace
     {
         constexpr int APP_VERSION_MAJOR = 0;
-        constexpr int APP_VERSION_MINOR = 7;
+        constexpr int APP_VERSION_MINOR = 8;
         constexpr int APP_VERSION_PATCH = 0;
 
         constexpr const char* TELEPORT_TYPE_LABELS[Utils::to_integral(Terminal::TeleportType::TYPE_COUNT)] =
@@ -165,16 +165,9 @@ namespace HuxApp
             return true;
         }
 
-        void init_screen_group_item(QTreeWidgetItem* screen_group_item, bool unfinished)
+        void init_screen_group_item(QTreeWidgetItem* screen_group_item, Terminal::BranchType branch_type)
         {
-            if (unfinished)
-            {
-                screen_group_item->setText(0, QStringLiteral("UNFINISHED"));
-            }
-            else
-            {
-                screen_group_item->setText(0, QStringLiteral("FINISHED"));
-            }
+            screen_group_item->setText(0, Terminal::get_branch_type_name(branch_type));
             screen_group_item->setIcon(0, QApplication::style()->standardIcon(QStyle::StandardPixmap::SP_DirIcon));
         }
 
@@ -255,13 +248,13 @@ namespace HuxApp
         {
             // Clear the tree and re-add the screen group items
             m_ui.screen_browser_tree->clear();
+            
+            for (int current_branch_index = 0; current_branch_index < Utils::to_integral(Terminal::BranchType::TYPE_COUNT); ++current_branch_index)
             {
-                QTreeWidgetItem* unfinished_screens_root = new QTreeWidgetItem(m_ui.screen_browser_tree);
-                init_screen_group_item(unfinished_screens_root, true);
-            }
-            {
-                QTreeWidgetItem* finished_screens_root = new QTreeWidgetItem(m_ui.screen_browser_tree);
-                init_screen_group_item(finished_screens_root, false);
+                const Terminal::BranchType current_branch_type = Utils::to_enum<Terminal::BranchType>(current_branch_index);
+                QTreeWidgetItem* current_branch_screens_root = new QTreeWidgetItem(m_ui.screen_browser_tree);
+
+                init_screen_group_item(current_branch_screens_root, current_branch_type);
             }
         }
 
@@ -293,44 +286,32 @@ namespace HuxApp
 
             // Set the terminal attributes
             m_ui.terminal_info_table->setItem(0, 0, new QTableWidgetItem(QString::number(terminal_id)));
-            {
-                const Terminal::Teleport& unfinished_teleport = selected_terminal.get_teleport_info(true);
-                if (unfinished_teleport.m_type != Terminal::TeleportType::NONE)
-                {
-                    QTableWidgetItem* unfinished_teleport_item = new QTableWidgetItem(QStringLiteral("%1 (%2)").arg(QString::number(unfinished_teleport.m_index), TELEPORT_TYPE_LABELS[Utils::to_integral(unfinished_teleport.m_type)]));
-                    m_ui.terminal_info_table->setItem(1, 0, unfinished_teleport_item);
-                }
-            }
 
+            int current_branch_index = 0;
+            for (const Terminal::Branch& current_branch : selected_terminal.get_branches())
             {
-                const Terminal::Teleport& finished_teleport = selected_terminal.get_teleport_info(false);
-                if (finished_teleport.m_type != Terminal::TeleportType::NONE)
+                const Terminal::Teleport& current_teleport = current_branch.m_teleport;
+                if (current_teleport.m_type != Terminal::TeleportType::NONE)
                 {
-                    QTableWidgetItem* finished_teleport_item = new QTableWidgetItem(QStringLiteral("%1 (%2)").arg(QString::number(finished_teleport.m_index), TELEPORT_TYPE_LABELS[Utils::to_integral(finished_teleport.m_type)]));
-                    m_ui.terminal_info_table->setItem(2, 0, finished_teleport_item);
-                }
-            }
+                    QTableWidgetItem* teleport_item = new QTableWidgetItem(QStringLiteral("%1 (%2)").arg(QString::number(current_teleport.m_index), TELEPORT_TYPE_LABELS[Utils::to_integral(current_teleport.m_type)]));
+                    m_ui.terminal_info_table->setItem(current_branch_index + 1, 0, teleport_item);
 
-            // Fill the screen browser
-            {
-                const auto& unfinished_screens = selected_terminal.get_screens(true);
-                QTreeWidgetItem* unfinished_group_item = m_ui.screen_browser_tree->topLevelItem(0);
-                for (const Terminal::Screen& current_screen : unfinished_screens)
+                }
+
+                // Fill the screen browser
+                QTreeWidgetItem* screen_group_item = m_ui.screen_browser_tree->topLevelItem(current_branch_index);
+                for (const Terminal::Screen& current_screen : current_branch.m_screens)
                 {
-                    QTreeWidgetItem* screen_item = new QTreeWidgetItem(unfinished_group_item);
+                    QTreeWidgetItem* screen_item = new QTreeWidgetItem(screen_group_item);
                     init_screen_item(current_screen, screen_item);
                 }
-                unfinished_group_item->setExpanded(true);
-            }
-            {
-                const auto& finished_screens = selected_terminal.get_screens(false);
-                QTreeWidgetItem* finished_group_item = m_ui.screen_browser_tree->topLevelItem(1);
-                for (const Terminal::Screen& current_screen : finished_screens)
+
+                if (!current_branch.m_screens.empty())
                 {
-                    QTreeWidgetItem* screen_item = new QTreeWidgetItem(finished_group_item);
-                    init_screen_item(current_screen, screen_item);
+                    screen_group_item->setExpanded(true);
                 }
-                finished_group_item->setExpanded(true);
+
+                ++current_branch_index;
             }
         }
     };
@@ -384,12 +365,13 @@ namespace HuxApp
         m_internal->m_ui.action_save_scenario_as->setEnabled(false);
         m_internal->m_ui.action_export_scenario_scripts->setEnabled(false);
         
-        m_internal->m_ui.terminal_info_table->setRowCount(3);
+        m_internal->m_ui.terminal_info_table->setRowCount(4);
         m_internal->m_ui.terminal_info_table->setColumnCount(1);
 
         m_internal->m_ui.terminal_info_table->setVerticalHeaderItem(0, new QTableWidgetItem("ID"));
         m_internal->m_ui.terminal_info_table->setVerticalHeaderItem(1, new QTableWidgetItem("Unfinished teleport"));
         m_internal->m_ui.terminal_info_table->setVerticalHeaderItem(2, new QTableWidgetItem("Finished teleport"));
+        m_internal->m_ui.terminal_info_table->setVerticalHeaderItem(3, new QTableWidgetItem("Failed teleport"));
 
         m_internal->m_ui.screen_info_table->setRowCount(2);
         m_internal->m_ui.screen_info_table->setColumnCount(1);
@@ -690,13 +672,14 @@ namespace HuxApp
                 current_screen = group_item->child(0);
             }
 
-            const bool unfinished = (m_internal->m_ui.screen_browser_tree->indexOfTopLevelItem(current_screen->parent()) == 0);
+            const Terminal::BranchType branch_type = Utils::to_enum<Terminal::BranchType>(m_internal->m_ui.screen_browser_tree->indexOfTopLevelItem(current_screen->parent()));
             const int screen_index = current_screen->parent()->indexOfChild(current_screen);
 
             const LevelModel* selected_level = m_internal->m_scenario_browser_model.get_level_model(m_internal->m_selected_terminal.m_level_id);
             const Terminal* selected_terminal = selected_level->get_terminal(m_internal->m_selected_terminal);
 
-            const Terminal::Screen& selected_screen = selected_terminal->get_screen(screen_index, unfinished);
+            const Terminal::Branch& selected_branch = selected_terminal->get_branch(branch_type);
+            const Terminal::Screen& selected_screen = selected_branch.m_screens[screen_index];
 
             m_internal->display_screen(*m_core, selected_screen);
         }

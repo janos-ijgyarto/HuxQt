@@ -31,7 +31,7 @@ namespace HuxApp
 		void update_preview();
 
 		bool validate_terminal_info();
-		bool gather_teleport_info(bool unfinished);
+		bool gather_teleport_info();
 
 		// Dialog buttons
 		void ok_clicked();
