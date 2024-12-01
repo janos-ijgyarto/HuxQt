@@ -1,138 +1,143 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-      "major": 3,
-      "minor": 16,
-      "patch": 0
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "description": "Sets build and install directory",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/out/build/${presetName}/bin"
+      },
+      "warnings": { "dev": false }
     },
-    "configurePresets": [
-      {
-        "name": "base",
-        "description": "Sets build and install directory",
-        "hidden": true,
-        "binaryDir": "${sourceDir}/out/build/${presetName}",
-        "cacheVariables": {
-          "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-          "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/out/build/${presetName}/bin"
-        },
-        "warnings": { "dev": false }
-      },
-      {
-        "name": "platform-windows",
-        "description": "Base preset for Windows",
-        "hidden": true,
-        "condition": {
-          "type": "equals",
-          "lhs": "${hostSystemName}",
-          "rhs": "Windows"
-        }
-      },
-      {
-        "name": "platform-linux",
-        "description": "Base preset for Linux",
-        "hidden": true,
-        "vendor": {
-          "microsoft.com/VisualStudioSettings/CMake/1.0": {
-            "hostOS": [ "Linux" ]
-          }
-        }
-      },
-      {
-        "name": "generator-vs",
-        "description": "Base preset for configurations using VS 2022 as the generator",
-        "hidden": true,
-        "generator": "Visual Studio 17 2022",
-        "vendor": {
-          "microsoft.com/VisualStudioSettings/CMake/1.0": {
-            "hostOS": [ "Windows" ]
-          }
-        }
-      },
-      {
-        "name": "generator-ninja",
-        "hidden": true,
-        "generator": "Ninja"
-      },
-      {
-        "name": "compiler-cl",
-        "hidden": true,
-        "cacheVariables": {
-          "CMAKE_C_COMPILER": "cl",
-          "CMAKE_CXX_COMPILER": "cl"
-        }
-      },
-      {
-        "name": "compiler-clang-cl",
-        "hidden": true,
-        "cacheVariables": {
-          "CMAKE_C_COMPILER": "clang-cl",
-          "CMAKE_CXX_COMPILER": "clang-cl"
-        },
-        "toolset": "ClangCL",
-        "vendor": {
-          "microsoft.com/VisualStudioSettings/CMake/1.0": {
-            "intelliSenseMode": "windows-clang-x64"
-          }
-        }
-      },
-      {
-        "name": "compiler-g++",
-        "hidden": true,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug",
-          "CMAKE_CXX_COMPILER": "g++"
-        }
-      },
-      {
-        "name": "architecture-win32",
-        "hidden": true,
-        "architecture": {
-          "value": "Win32",
-          "strategy": "set"
-        }
-      },
-      {
-        "name": "architecture-x64",
-        "hidden": true,
-        "architecture": {
-          "value": "x64",
-          "strategy": "set"
-        }
-      },
-      {
-        "name": "config-debug",
-        "hidden": true,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug",
-          "CMAKE_CONFIGURATION_TYPES": "Debug"
-        }
-      },
-      {
-        "name": "config-release",
-        "hidden": true,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Release",
-          "CMAKE_CONFIGURATION_TYPES": "Release"
-        }
-      },
-      {
-        "name": "windows-cl-debug",
-        "displayName": "MSVC debug",
-        "description": "Windows Ninja build using MSVC",
-        "inherits": [ "base", "platform-windows", "generator-ninja", "compiler-cl", "config-debug" ]
-      },
-      {
-        "name": "windows-cl-release",
-        "displayName": "MSVC release",
-        "description": "Windows Ninja build using MSVC",
-        "inherits": [ "base", "platform-windows", "generator-ninja", "compiler-cl", "config-release" ]
-      },
-      {
-        "name": "linux-ninja-g++",
-        "description": "Linux Ninja build using g++",
-        "inherits": [ "base", "platform-linux", "generator-ninja", "compiler-g++" ]
+    {
+      "name": "platform-windows",
+      "description": "Base preset for Windows",
+      "hidden": true,
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
       }
-    ],
+    },
+    {
+      "name": "platform-linux",
+      "description": "Base preset for Linux",
+      "hidden": true,
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ]
+        }
+      }
+    },
+    {
+      "name": "generator-vs",
+      "description": "Base preset for configurations using VS 2022 as the generator",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "generator-ninja",
+      "hidden": true,
+      "generator": "Ninja"
+    },
+    {
+      "name": "compiler-cl",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
+      "name": "compiler-clang-cl",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      },
+      "toolset": "ClangCL",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
+      }
+    },
+    {
+      "name": "compiler-g++",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "architecture-win32",
+      "hidden": true,
+      "architecture": {
+        "value": "Win32",
+        "strategy": "set"
+      }
+    },
+    {
+      "name": "architecture-x64",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      }
+    },
+    {
+      "name": "config-debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CONFIGURATION_TYPES": "Debug"
+      }
+    },
+    {
+      "name": "config-release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CONFIGURATION_TYPES": "Release"
+      }
+    },
+    {
+      "name": "windows-cl-debug",
+      "displayName": "MSVC debug",
+      "description": "Windows Ninja build using MSVC",
+      "inherits": [ "base", "platform-windows", "generator-ninja", "compiler-cl", "config-debug" ]
+    },
+    {
+      "name": "windows-cl-release",
+      "displayName": "MSVC release",
+      "description": "Windows Ninja build using MSVC",
+      "inherits": [ "base", "platform-windows", "generator-ninja", "compiler-cl", "config-release" ]
+    },
+    {
+      "name": "linux-ninja-g++-debug",
+      "description": "Linux Ninja debug build using g++",
+      "inherits": [ "base", "platform-linux", "generator-ninja", "compiler-g++", "config-debug" ]
+    },
+    {
+      "name": "linux-ninja-g++-release",
+      "description": "Linux Ninja debug build using g++",
+      "inherits": [ "base", "platform-linux", "generator-ninja", "compiler-g++", "config-release" ]
+    }
+  ],
   "buildPresets": [
     {
       "name": "HuxQt-base",
@@ -145,8 +150,16 @@
       "displayName": "Linux Debug",
       "description": "Linux debug build using g++",
       "inherits": "HuxQt-base",
-      "configurePreset": "linux-ninja-g++",
+      "configurePreset": "linux-ninja-g++-debug",
       "configuration": "Debug"
+    },
+    {
+      "name": "HuxQt-Linux-Release",
+      "displayName": "Linux Release",
+      "description": "Linux release build using g++",
+      "inherits": "HuxQt-base",
+      "configurePreset": "linux-ninja-g++-release",
+      "configuration": "Release"
     },
     {
       "name": "HuxQt-Windows-Debug",
