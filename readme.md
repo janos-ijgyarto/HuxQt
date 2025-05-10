@@ -171,6 +171,28 @@ La app fue desarrollada usando Qt versión 5.12.9, pero debería ser compatible 
 
 _NOTA: Hux proporciona una representación cercana, pero no 1:1 de la representación de la terminal de Aleph One. Se conserva todo el contenido del scripteado, pero puede haber pequeñas diferencias en el resultado mostrado (por ejemplo, ajustes de líneas)_
 
+## Compilación desde el código fuente
+
+Hux utiliza [CMake](https://cmake.org/) como sistema de compilación multiplataforma. La versión mínima requerida es la 3.16.
+
+Para mayor comodidad, el proyecto también incluye un archivo [CMakePresets.json](https://learn.microsoft.com/en-us/cpp/build/cmake-presets-vs) con algunas configuraciones básicas de compilación para Windows y Linux. Estas configuraciones pueden ajustarse aún más mediante un archivo CMakeUserPresets.json en el entorno local del usuario.
+
+### Compilando en Windows
+
+La opción más sencilla es compilar usando Visual Studio 2022 o Visual Studio Code con las extensiones correspondientes, ya que ambos pueden utilizar los presets de CMake.
+
+*NOTA: el comando de CMake `find_package` actualmente no funciona correctamente con Qt en Windows, por lo que debes establecer la variable `CMAKE_PREFIX_PATH` al directorio donde está instalado Qt6.*
+
+### Copilando en Linux
+
+Configura los requisitos para Linux/X11 según la [Qt documentation](https://doc.qt.io/qt-6/linux.html), luego instala el paquete "Qt6 base" (por ejemplo, `sudo apt install qt6-base-dev`), que incluye las características necesarias de Qt. Instala CMake, luego configura y compila.
+
+*NOTA: asegúrate de establecer un directorio de salida (ej. `CMAKE_RUNTIME_OUTPUT_DIRECTORY`), de lo contrario el nombre de la aplicación podría colisionar con alguna de las carpetas creadas por CMake durante la compilación.*
+
+### Compilando para Mac
+
+TODO
+
 ## Empezando
 
 Una vez que abra Hux, primero debes [importar](#importing-scenarios) un escenario desde la carpeta dividida (split folder), or [abrir](#loading-scenarios) un archivo de escenario Hux.
