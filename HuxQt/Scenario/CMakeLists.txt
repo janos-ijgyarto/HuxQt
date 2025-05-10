@@ -1,0 +1,13 @@
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    Level.h
+	Level.cpp
+	Scenario.h
+	Scenario.cpp
+	ScenarioBrowserModel.h
+	ScenarioBrowserModel.cpp
+	ScenarioManager.h
+	ScenarioManager.cpp
+	Terminal.h
+	Terminal.cpp
+   )

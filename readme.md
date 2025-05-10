@@ -3,9 +3,31 @@ Hux is a WYSIAWYG ("What You See Is (Almost) What You Get") terminal script edit
 
 All necessary operations can be done through the tool, minimizing the risk of errors caused by incorrect syntax, and reducing the time cost of creating/editing terminals.
 
-The app was developed using Qt version 5.12.9, but it should be compatible with newer versions.
+The app was developed using Qt version 6.8.0.
 
 _NOTE: Hux provides a close, but not 1:1 representation of Aleph One's terminal rendering. All scripting content is preserved, but there can be small differences in the displayed result (e.g line wrapping)_
+
+## Building from source
+
+Hux uses [CMake](https://cmake.org/) as its platform-independent build system. The minimum required version is 3.16.
+
+For convenience, the project also comes with a [CMakePresets.json](https://learn.microsoft.com/en-us/cpp/build/cmake-presets-vs) containing some basic build configurations for Windows and Linux. These can be further adjusted via a CMakeUserPresets.json file for the user's local environment.
+
+### Building on Windows
+
+The simplest option is to build using Visual Studio 2022 or Visual Studio Code with the relevant extensions, as both are able to use CMake presets.
+
+*NOTE: the CMake command `find_package` currently does not work correctly with Qt on Windows, so you have to set the `CMAKE_PREFIX_PATH` variable to where Qt6 is installed.*
+
+### Building on Linux
+
+Set the requirements for Linux/X11 as per the [Qt documentation](https://doc.qt.io/qt-6/linux.html), then install the "Qt6 base" package (e.g `sudo apt install qt6-base-dev`), which will have the necessary Qt features. Install CMake, then configure and build.
+
+*NOTE: make sure to set an output directory (i.e `CMAKE_RUNTIME_OUTPUT_DIRECTORY`), otherwise the application name may collide with one of the folders created by CMake during the build.*
+
+### Building on Mac
+
+TODO
 
 ## Getting started
 
