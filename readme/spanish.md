@@ -4,7 +4,7 @@ Hux es una WYSIAWYG (del inglés "What You See Is What You Get", que significa "l
 
 Todas las operaciones necesarias pueden realizarse atreves de la herramienta, minimizando el riesgo causado por una sintaxis incorrecta y reduciendo el costo de tiempo para la creación y edición de terminales.
 
-La app fue desarrollada usando Qt versión 5.12.9, pero debería ser compatible con las versiones más nuevas.
+La app fue desarrollada usando Qt versión 6.8.0.
 
 _NOTA: Hux proporciona una representación cercana, pero no 1:1 de la representación de la terminal de Aleph One. Se conserva todo el contenido del scripteado, pero puede haber pequeñas diferencias en el resultado mostrado (por ejemplo, ajustes de líneas)_
 
