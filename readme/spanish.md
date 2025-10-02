@@ -33,7 +33,7 @@ TODO
 
 ## Empezando
 
-Una vez que abra Hux, primero debes [importar](#importando-escenarios) un escenario desde la carpeta dividida (split folder), or [abrir](#loading-scenarios) un archivo de escenario Hux.
+Una vez que abra Hux, primero debes [importar](#importando-escenarios) un escenario desde la carpeta dividida (split folder), or [abrir](#cargando-escenarios) un archivo de escenario Hux.
 
 ### Importando escenarios
 
@@ -62,7 +62,7 @@ Esta es la ventana principal que se muestra por primera vez cuando se carga la a
 
 El lado izquierdo de la ventana muestra el [Navegador de Escenarios](#navegador-de-escenarios) y una tabla de información para la terminal actualmente seleccionada.
 
-El lado derecho muestra un [Explorador de Pantalla](#explorador-de-Pantallas) para el terminal seleccionado, una tabla que contiene información sobre la pantalla seleccionada actualmente y una vista previa de la terminal.
+El lado derecho muestra un [Explorador de Pantalla](#explorador-de-pantallas) para el terminal seleccionado, una tabla que contiene información sobre la pantalla seleccionada actualmente y una vista previa de la terminal.
 
 #### Navegador de Escenarios
 
