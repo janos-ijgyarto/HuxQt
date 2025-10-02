@@ -1,5 +1,5 @@
-# Hux
-> 🌐 Available languages: [English](./readme/english.md) | [Español](./readme/spanish.md)
+﻿# Hux
+> 🌐 Available languages: [English](english.md) | [Español](spanish.md)
 
 Hux is a WYSIAWYG ("What You See Is (Almost) What You Get") terminal script editor for [Aleph One](https://alephone.lhowon.org/), developed using [Qt](https://www.qt.io/). The GUI allows users to create, edit, and preview terminals in any AO-compatible scenario, with controls provided for image and text alignment, formatting, etc. 
 
