@@ -84,13 +84,13 @@ Lo botones debajo de la pantalla también se pueden usar para navegar entre las 
 
 El [Navegador de Escenarios](#navegador-de-escenarios) te permite editar el contenido del escenario, incluidos los niveles y sus terminales.
 
-- Agregar y eliminar se realiza a través de los botones debajo de la vista [[Navegador de Escenarios](#navegador-de-escenarios).
+- Agregar y eliminar se realiza a través de los botones debajo de la vista [Navegador de Escenarios](#navegador-de-escenarios).
 - Los niveles se puede editar haciendo click derecho y seleccionando "Edit Level" (Editar Nivel) [Editor de Nivel](#editor-de-nivel).
 - Puede arrastrar y soltar para reordenar niveles y terminales. Cambiar el orden de los niveles no afercta a la exportación, es solo para conveniencia del usuario.
   - *NOTA: cambiando el orden de las terminales cambiará el ID  de los terminales en el script exportado. Esto puede invalidad las referencias en los datos del mapa!*
 - al hacer doble click en un nivel, se abre y muestra una lista de sus terminales.
 - Las terminales se puede copiar y pegar dentro y entre los niveles. Para copiar los terminales seleccionados, haga click derecho y selecciones "Copy", y luego haga click derecho nuevamente en la ubicación deseada y selecciones "Paste".
-- Al hacer doble click en un terminal en el [Navegador de Escenarios](#scenario-browser) abre una ventana del [Editor de Terminales](#terminal-editor), que permite a los usuarios editar el contenido de la terminal.
+- Al hacer doble click en un terminal en el [Navegador de Escenarios](#navegador-de-escenarios) abre una ventana del [Editor de Terminales](#editor-de-terminal), que permite a los usuarios editar el contenido de la terminal.
 
 ### Editor de Nivel
 
@@ -104,24 +104,24 @@ Al agregar un nuevo nivel o reorganizar el escenario, debe proporcionar la carpe
 
 ### Editor de Terminal
 
-Cuando hace click en una terminal en el [Navegador de Escenario](#scenario-browser), se abre una ventana del [Editor de Terminal](#terminal-editor) para este terminal.
+Cuando hace click en una terminal en el [Navegador de Escenarios](#navegador-de-escenarios), se abre una ventana del [Editor de Terminal](#terminal-editor) para este terminal.
 
-El lado izquierda de la ventana muestra los controles para editar los atributos de la terminal (e.j. información de teletransportacion) y el [Explorador de Pantalla](#screen-browser), que se puede usar para ver y modificar las pantalla dentro de la terminal. 
+El lado izquierda de la ventana muestra los controles para editar los atributos de la terminal (e.j. información de teletransportacion) y el [Explorador de Pantalla](#explorador-de-pantallas), que se puede usar para ver y modificar las pantalla dentro de la terminal. 
 
 El lado derecho contiene una vista de editor donde se puede editar los contenidos de la pantalla y los metadatos, junto con un vista previa de la pantalla editada actualmente.
 
 - Puede dar a los terminales un nombre personalizado que para identificarlos fácilmente. Estos datos son específicos de Hux, no se exportan con los archivos de script del terminal.
-- El [Explorador de Pantallas](#screen-browser) contienen dos carpetas, correspondiente a los grupos de pantalla "UNFINISHE" y "FINISHED". Haga doble click en una carpeta para ver y editar su contenido.
-- La edición de la lista de pantallas es similar a la edición de niveles ene el [Navegador de Escenarios](#scenario-browser):
+- El [Explorador de Pantalla](#explorador-de-pantallas) contiene dos carpetas, correspondiente a los grupos de pantalla "UNFINISHE" y "FINISHED". Haga doble click en una carpeta para ver y editar su contenido.
+- La edición de la lista de pantallas es similar a la edición de niveles ene el [Navegador de Escenarios](#navegador-de-escenarios):
   - Agregar o eliminar pantalla usando los botones debajo den navegador.
   - Mover pantallas usando arrastrar y soltar.
   - Copiar y pegar pantallas seleccionadas click derecho y seleccionando la acción apropiada.
-- Para editar una pantalla, selecciónela en el [Screen Browser](#screen-browser). Esto actualizará la vista del editor de pantalla y la vista previa. AL cambiar de pantalla, se guardarán los cambios en la última pantalla seleccionada.
-- Una vez que haya terminado de editar, puede cerrar la ventana usando "OK". Esto aplicara los cambiaos al terminal en el [Navegador de Escenario](#scenario-browser).
+- Para editar una pantalla, selecciónela en el [Explorador de Pantalla](#explorador-de-pantallas). Esto actualizará la vista del editor de pantalla y la vista previa. AL cambiar de pantalla, se guardarán los cambios en la última pantalla seleccionada.
+- Una vez que haya terminado de editar, puede cerrar la ventana usando "OK". Esto aplicara los cambiaos al terminal en el [Navegador de Escenarios](#navegador-de-escenarios).
 
 ### Pantalla de edición
 
-Cuando se selecciona una pantalla en el [Explorador de Pantalla](#screen-browser), la vista del editor se actualizará con su contenido y la vista previa de la pantalla se mostrará en la pantalla.
+Cuando se selecciona una pantalla en el [Explorador de Pantalla](#explorador-de-pantallas), la vista del editor se actualizará con su contenido y la vista previa de la pantalla se mostrará en la pantalla.
 
 Cualquier cambio realizado en el contenido de la pantalla actualizará automáticamente la vista previa.
 
