@@ -33,7 +33,7 @@ TODO
 
 ## Empezando
 
-Una vez que abra Hux, primero debes [importar](#importing-scenarios) un escenario desde la carpeta dividida (split folder), or [abrir](#loading-scenarios) un archivo de escenario Hux.
+Una vez que abra Hux, primero debes [importar](#importando-escenarios) un escenario desde la carpeta dividida (split folder), or [abrir](#loading-scenarios) un archivo de escenario Hux.
 
 ### Importando escenarios
 
@@ -41,7 +41,7 @@ Hux puede hacer uso de carpetas divididas generadas por [Atque](https://sourcefo
 
 Para importar un escenario desde una carpeta dividida (split folder), simpemente haga click en _File -> Import Scernacio Scrips_ y seleccione el directorio raíz de un escenario dividido generado por Atque. El navegador de escenario mostrará en pantalla todos los niveles que tengan un archivo script válido.
 
- Cuando comienza a trabajar en un nuevo escenario, o desea editar un escenario que no tiene datos específicos de Hux, debe crear una carpeta dividida (split folder) e importarla, después de esto puede [agregar niveles](#editing-scenarios) que requieran datos de terminal.
+ Cuando comienza a trabajar en un nuevo escenario, o desea editar un escenario que no tiene datos específicos de Hux, debe crear una carpeta dividida (split folder) e importarla, después de esto puede [agregar niveles](#editando-escenarios) que requieran datos de terminal.
 
 *NOTA: ¡Asegúrese de que la carpeta dividida también tenga una carpeta "Resources" (Recursos) válida!*
 
@@ -60,9 +60,9 @@ El archivo personalizado se recomienda para los desarrolladores que trabajan en 
 
 Esta es la ventana principal que se muestra por primera vez cuando se carga la aplicación.
 
-El lado izquierdo de la ventana muestra el [Navegador de Escenarios](#scenario-browser) y una tabla de información para la terminal actualmente seleccionada.
+El lado izquierdo de la ventana muestra el [Navegador de Escenarios](#navegador-de-escenarios) y una tabla de información para la terminal actualmente seleccionada.
 
-El lado derecho muestra un [Navegador de Pantalla](#screen-browser) para el terminal seleccionado, una tabla que contiene información sobre la pantalla seleccionada actualmente y una vista previa de la terminal.
+El lado derecho muestra un [Explorador de Pantalla](#explorador-de-Pantallas) para el terminal seleccionado, una tabla que contiene información sobre la pantalla seleccionada actualmente y una vista previa de la terminal.
 
 #### Navegador de Escenarios
 
@@ -70,7 +70,7 @@ Cada nivel en el escenario está representado por una carpeta en la vista de lis
 
 Hacer doble click en un nivel, aparecerá una lista de las terminales contenidos en dicho nivel.
 
-Al hacer clic en un termina, se mostrará su contenido en el [Explorador de Pantalla](#screen-browser). Para volver a la vista principal del escenario, utilice el botón "Up" (Arriba) sobre el *Explorador de Escenarios*
+Al hacer clic en un termina, se mostrará su contenido en el [Explorador de Pantalla](#explorador-de-pantallas). Para volver a la vista principal del escenario, utilice el botón "Up" (Arriba) sobre el *Explorador de Escenarios*
 
 #### Explorador de Pantallas
 
@@ -82,10 +82,10 @@ Lo botones debajo de la pantalla también se pueden usar para navegar entre las 
 
 ### Editando escenarios
 
-El [Explorado de Escenarios](#scenario-browser) te permite editar el contenido del escenario, incluidos los niveles y sus terminales.
+El [Navegador de Escenarios](#navegador-de-escenarios) te permite editar el contenido del escenario, incluidos los niveles y sus terminales.
 
-- Agregar y eliminar se realiza a través de los botones debajo de la vista [Navegador de Escenarios](#scenario-browser).
-- Los niveles se puede editar haciendo click derecho y seleccionando "Edit Level" (Editar Nivel) [Editor de Nivel](#level-editor).
+- Agregar y eliminar se realiza a través de los botones debajo de la vista [[Navegador de Escenarios](#navegador-de-escenarios).
+- Los niveles se puede editar haciendo click derecho y seleccionando "Edit Level" (Editar Nivel) [Editor de Nivel](#editor-de-nivel).
 - Puede arrastrar y soltar para reordenar niveles y terminales. Cambiar el orden de los niveles no afercta a la exportación, es solo para conveniencia del usuario.
   - *NOTA: cambiando el orden de las terminales cambiará el ID  de los terminales en el script exportado. Esto puede invalidad las referencias en los datos del mapa!*
 - al hacer doble click en un nivel, se abre y muestra una lista de sus terminales.
